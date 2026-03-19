@@ -260,7 +260,7 @@ function BulletInput({ value, onChange, placeholder }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Coaching Detail Modal (Specialist)
 /// ────────────────────────────────────────────────────────────────────────────
-function CoachingDetailModal({ coaching, onClose, onAcknowledge }) {
+function CoachingDetailModal({ coaching, onClose, onAcknowledge, isAgent = false }) {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState("");
@@ -333,19 +333,12 @@ function CoachingDetailModal({ coaching, onClose, onAcknowledge }) {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: tc,
-                    background: tc + "18",
-                    padding: "3px 10px",
-                    borderRadius: 99,
-                  }}
-                >
-                  {coaching.type}
-                </span>
-                {coaching.ews && (
+                {!isAgent && (
+                  <span style={{ fontSize: 11, fontWeight: 700, color: tc, background: tc + "18", padding: "3px 10px", borderRadius: 99 }}>
+                    {coaching.type}
+                  </span>
+                )}
+                {!isAgent && coaching.ews && (
                   <span
                     style={{
                       fontSize: 11,
@@ -1294,7 +1287,6 @@ function DashboardView({ coachings, warnings, role, T, onOpenCoaching, targets, 
                     onClick={() => onOpenCoaching(c)}>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:11, fontWeight:600, color:T.text, marginBottom:4 }}>{c.date}</div>
-                      <div style={{ fontSize:10, color:T.muted }}><span style={{ fontSize:9, fontWeight:700, color:tc, background:tc+"18", padding:"2px 6px", borderRadius:99 }}>{c.type}</span></div>
                     </div>
                     <span style={{ fontSize:10, fontWeight:600, color:ss.text, background:ss.bg, padding:"3px 8px", borderRadius:99 }}>{c.status}</span>
                   </div>
@@ -1326,33 +1318,6 @@ function DashboardView({ coachings, warnings, role, T, onOpenCoaching, targets, 
           </div>
         </div>
 
-        {/* EWS & Type Breakdown */}
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-          <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:12, padding:18 }}>
-            <div style={{ fontSize:12, fontWeight:700, color:T.text, marginBottom:14 }}>EWS Breakdown</div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-              {ewsData.map((e,i)=>(
-                <div key={i} style={{ background:e.bg, borderRadius:10, padding:"12px 14px" }}>
-                  <div style={{ fontSize:18, fontWeight:800, color:e.color }}>{e.val}</div>
-                  <div style={{ fontSize:10, color:e.color, fontWeight:600 }}>{e.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:12, padding:18 }}>
-            <div style={{ fontSize:12, fontWeight:700, color:T.text, marginBottom:14 }}>By Type</div>
-            {typeData.map((t,i)=>(
-              <div key={i} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
-                <div style={{ fontSize:10, color:T.muted, width:90, flexShrink:0 }}>{t.label}</div>
-                <div style={{ flex:1, height:6, borderRadius:99, background:T.border }}>
-                  <div style={{ height:"100%", width:`${filteredCoachings.length>0?(t.val/filteredCoachings.length)*100:0}%`, borderRadius:99, background:t.color }} />
-                </div>
-                <div style={{ fontSize:10, fontWeight:700, color:t.color, width:16 }}>{t.val}</div>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     );
   }
@@ -2341,10 +2306,10 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
     try {
       const { error } = await supabase
         .from("coachings")
-        .update({ 
+        .update({
           status: "Acknowledged",
-          agentRating: rating,
-          agentComment: comment
+          agent_rating: rating,
+          agent_comment: comment
         })
         .eq("id", id);
       
@@ -2510,7 +2475,7 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
         )}
       </div>
 
-      {selectedCoaching && <CoachingDetailModal coaching={selectedCoaching} onClose={()=>setSelectedCoaching(null)} onAcknowledge={acknowledgeCoaching} />}
+      {selectedCoaching && <CoachingDetailModal coaching={selectedCoaching} onClose={()=>setSelectedCoaching(null)} onAcknowledge={acknowledgeCoaching} isAgent={isSpecialist} />}
     </div>
   );
 }
