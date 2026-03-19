@@ -83,6 +83,20 @@ const normWarning = (r) => ({
   witness2Name:       r.witness2_name       ?? r.witness2Name ?? "",
 });
 
+const normTriad = (r) => ({
+  ...r,
+  managerName:       r.manager_name        ?? r.managerName ?? "",
+  tlName:            r.tl_name             ?? r.tlName ?? "",
+  agentName:         r.agent_name          ?? r.agentName ?? "",
+  coachingId:        r.coaching_id         ?? r.coachingId ?? null,
+  areasOfImprovement:r.areas_of_improvement?? r.areasOfImprovement ?? "",
+  actionPlan:        r.action_plan         ?? r.actionPlan ?? "",
+  followUpDate:      r.follow_up_date      ?? r.followUpDate ?? "",
+  tlRating:          r.tl_rating           ?? r.tlRating ?? null,
+  tlComment:         r.tl_comment          ?? r.tlComment ?? "",
+  acknowledgedAt:    r.acknowledged_at     ?? r.acknowledgedAt ?? null,
+});
+
 // Sample data structure for Team Leads and Agents
 const DATABASE = {
   teamLeads: [
@@ -1142,6 +1156,257 @@ function DrilldownModal({ title, coachings, T, onClose, onOpenCoaching }) {
   );
 }
 
+// ── TRIAD DETAIL MODAL (TL acknowledges) ─────────────────────────────────────
+function TriadDetailModal({ triad, onClose, onAcknowledge }) {
+  const [rating, setRating] = useState(0);
+  const [hover,  setHover]  = useState(0);
+  const [comment, setComment] = useState("");
+  const acked = !!triad.acknowledgedAt;
+
+  return (
+    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"#000000cc", display:"flex", alignItems:"center", justifyContent:"center", zIndex:100, padding:20 }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:"#13151f", border:"1px solid #1e2130", borderRadius:18, width:"100%", maxWidth:620, maxHeight:"92vh", display:"flex", flexDirection:"column" }}>
+        <div style={{ padding:"20px 26px 16px", borderBottom:"1px solid #1e2130", display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexShrink:0 }}>
+          <div>
+            <div style={{ fontSize:11, fontWeight:700, color:"#14b8a6", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:4 }}>Manager Triad</div>
+            <h3 style={{ margin:0, fontSize:16, fontWeight:700, color:"#f1f5f9" }}>Triad Review</h3>
+            <div style={{ fontSize:12, color:"#64748b", marginTop:3 }}>{triad.date} · {triad.agentName || "—"}</div>
+          </div>
+          <button onClick={onClose} style={{ background:"none", border:"none", color:"#64748b", cursor:"pointer", fontSize:20 }}>×</button>
+        </div>
+        <div style={{ overflowY:"auto", flex:1, padding:"22px 26px" }}>
+          <div style={{ display:"flex", gap:16, marginBottom:20 }}>
+            <div style={{ flex:1, background:"#0d0f18", borderRadius:10, padding:14 }}>
+              <div style={{ fontSize:10, color:"#64748b", fontWeight:700, textTransform:"uppercase", marginBottom:4 }}>Manager</div>
+              <div style={{ fontSize:13, color:"#f1f5f9", fontWeight:600 }}>{triad.managerName||"—"}</div>
+            </div>
+            <div style={{ flex:1, background:"#0d0f18", borderRadius:10, padding:14 }}>
+              <div style={{ fontSize:10, color:"#64748b", fontWeight:700, textTransform:"uppercase", marginBottom:4 }}>Coaching Reviewed</div>
+              <div style={{ fontSize:13, color:"#f1f5f9", fontWeight:600 }}>{triad.agentName||"—"}</div>
+            </div>
+          </div>
+          {[
+            { label:"Strengths Observed", content:triad.strengths },
+            { label:"Areas of Improvement", content:triad.areasOfImprovement },
+            { label:"Action Plan", content:triad.actionPlan },
+          ].map(({ label, content }) => content ? (
+            <div key={label} style={{ marginBottom:20 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:"#14b8a6", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:8 }}>{label}</div>
+              <ul style={{ margin:0, paddingLeft:18 }}>
+                {content.split("\n").filter(l=>l.trim()).map((l,i)=>(
+                  <li key={i} style={{ fontSize:13, color:"#e2e8f0", lineHeight:1.7 }}>{l}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null)}
+          {(triad.followUpDate || triad.notes) && (
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:20 }}>
+              {triad.followUpDate && (
+                <div style={{ background:"#0d0f18", borderRadius:10, padding:14 }}>
+                  <div style={{ fontSize:10, color:"#64748b", fontWeight:700, textTransform:"uppercase", marginBottom:4 }}>Follow-Up Date</div>
+                  <div style={{ fontSize:13, color:"#e2e8f0" }}>{triad.followUpDate}</div>
+                </div>
+              )}
+              {triad.notes && (
+                <div style={{ background:"#0d0f18", borderRadius:10, padding:14 }}>
+                  <div style={{ fontSize:10, color:"#64748b", fontWeight:700, textTransform:"uppercase", marginBottom:4 }}>Notes</div>
+                  <div style={{ fontSize:13, color:"#e2e8f0" }}>{triad.notes}</div>
+                </div>
+              )}
+            </div>
+          )}
+          {acked ? (
+            <div style={{ background:"#10b98115", border:"1px solid #10b98130", borderRadius:12, padding:16, textAlign:"center" }}>
+              <div style={{ fontSize:13, fontWeight:700, color:"#10b981", marginBottom:4 }}>✓ Triad Acknowledged</div>
+              {triad.tlRating && <div style={{ display:"flex", justifyContent:"center", gap:2, marginBottom:4 }}>{[1,2,3,4,5].map(s=><span key={s} style={{ fontSize:16, color:s<=triad.tlRating?"#f59e0b":"#1e2130" }}>★</span>)}</div>}
+              {triad.tlComment && <div style={{ fontSize:12, color:"#64748b" }}>{triad.tlComment}</div>}
+            </div>
+          ) : (
+            <div style={{ background:"#13151f", border:"1px solid #1e2130", borderRadius:12, padding:18 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:"#f1f5f9", marginBottom:14 }}>Your Feedback</div>
+              <div style={{ fontSize:11, color:"#94a3b8", marginBottom:8, textTransform:"uppercase", letterSpacing:"0.05em" }}>Rate this triad session</div>
+              <div style={{ display:"flex", gap:6, marginBottom:16 }}>
+                {[1,2,3,4,5].map(s=>(
+                  <span key={s} onClick={()=>setRating(s)} onMouseEnter={()=>setHover(s)} onMouseLeave={()=>setHover(0)}
+                    style={{ fontSize:28, cursor:"pointer", color:s<=(hover||rating)?"#f59e0b":"#1e2130", transition:"color 0.1s" }}>★</span>
+                ))}
+              </div>
+              <div style={{ fontSize:11, color:"#94a3b8", marginBottom:6, textTransform:"uppercase", letterSpacing:"0.05em" }}>Comments (optional)</div>
+              <textarea value={comment} onChange={e=>setComment(e.target.value)} placeholder="Add your comments..."
+                style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:"1px solid #1e2130", background:"#0d0f18", color:"#f1f5f9", fontSize:13, outline:"none", resize:"vertical", minHeight:80, boxSizing:"border-box", fontFamily:"inherit" }} />
+              <button onClick={()=>onAcknowledge(triad.id, rating, comment)} disabled={!rating}
+                style={{ width:"100%", marginTop:14, padding:12, borderRadius:10, border:"none", background:rating?"linear-gradient(135deg,#14b8a6,#0d9488)":"#1e2130", color:rating?"#fff":"#64748b", fontSize:14, fontWeight:700, cursor:rating?"pointer":"default", fontFamily:"inherit" }}>
+                ✓ Acknowledge & Submit
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── TRIAD MODAL (Manager creates) ─────────────────────────────────────────────
+function TriadModal({ onClose, onSave, profiles = [], coachings = [], selfName = "", T = THEMES.dark }) {
+  const defaultForm = {
+    tlName: "", agentName: "", coachingId: "",
+    date: new Date().toISOString().split("T")[0],
+    strengths: "", areasOfImprovement: "", actionPlan: "",
+    followUpDate: "", notes: "",
+  };
+  const [form, setForm] = useState(defaultForm);
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const allTLs = profiles.filter(p => p.role === "Team Lead");
+  const tlCoachings = coachings.filter(c => form.tlName && c.tlName === form.tlName);
+  const canSave = form.tlName && form.date && form.strengths;
+
+  const handleSelectCoaching = (coachingId) => {
+    const c = coachings.find(c => c.id === coachingId);
+    set("coachingId", coachingId);
+    if (c) set("agentName", c.agentName);
+  };
+
+  return (
+    <div style={{ padding:"24px 26px", maxWidth:700, margin:"0 auto" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:24 }}>
+        <button onClick={onClose} style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${T.border}`, background:"transparent", color:T.muted, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>← Back</button>
+        <h2 style={{ fontSize:18, fontWeight:700, color:T.text, margin:0 }}>New Manager Triad</h2>
+      </div>
+
+      <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:14, padding:24, marginBottom:16 }}>
+        <div style={{ fontSize:12, fontWeight:700, color:T.accent, marginBottom:18, textTransform:"uppercase", letterSpacing:"0.05em" }}>Basic Info</div>
+
+        <Field label="Team Lead" required>
+          <select value={form.tlName} onChange={e=>{ set("tlName", e.target.value); set("coachingId",""); set("agentName",""); }} style={inp}>
+            <option value="">Select a Team Lead...</option>
+            {allTLs.map(tl=><option key={tl.id} value={tl.full_name}>{tl.full_name}</option>)}
+          </select>
+        </Field>
+
+        {form.tlName && (
+          <Field label="Coaching Reviewed" hint="Select the coaching session being triaded (optional)">
+            <select value={form.coachingId} onChange={e=>handleSelectCoaching(e.target.value)} style={inp}>
+              <option value="">— Select a coaching —</option>
+              {tlCoachings.map(c=><option key={c.id} value={c.id}>{c.agentName} · {c.date} · {c.type}</option>)}
+            </select>
+          </Field>
+        )}
+
+        {form.agentName && (
+          <Field label="Specialist Coached">
+            <input value={form.agentName} readOnly style={{ ...inp, color:T.muted }} />
+          </Field>
+        )}
+
+        <Field label="Triad Date" required>
+          <input type="date" value={form.date} onChange={e=>set("date",e.target.value)} style={inp} />
+        </Field>
+      </div>
+
+      <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:14, padding:24, marginBottom:16 }}>
+        <div style={{ fontSize:12, fontWeight:700, color:T.accent, marginBottom:18, textTransform:"uppercase", letterSpacing:"0.05em" }}>Observations</div>
+
+        <Field label="Strengths Observed" required hint="What did the Team Lead do well in the coaching?">
+          <BulletInput value={form.strengths} onChange={v=>set("strengths",v)} placeholder="Strength observed..." />
+        </Field>
+
+        <Field label="Areas of Improvement" hint="What can the Team Lead improve?">
+          <BulletInput value={form.areasOfImprovement} onChange={v=>set("areasOfImprovement",v)} placeholder="Area of improvement..." />
+        </Field>
+
+        <Field label="Action Plan" hint="Concrete steps for improvement">
+          <BulletInput value={form.actionPlan} onChange={v=>set("actionPlan",v)} placeholder="Action step..." />
+        </Field>
+
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+          <Field label="Follow-Up Date">
+            <input type="date" value={form.followUpDate} onChange={e=>set("followUpDate",e.target.value)} style={inp} />
+          </Field>
+          <Field label="Additional Notes">
+            <input value={form.notes} onChange={e=>set("notes",e.target.value)} placeholder="Optional notes..." style={inp} />
+          </Field>
+        </div>
+      </div>
+
+      <div style={{ display:"flex", justifyContent:"flex-end", gap:10 }}>
+        <button onClick={onClose} style={{ padding:"10px 22px", borderRadius:10, border:`1px solid ${T.border}`, background:"transparent", color:T.muted, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>Cancel</button>
+        <button onClick={()=>canSave&&onSave(form)} disabled={!canSave}
+          style={{ padding:"10px 22px", borderRadius:10, border:"none", background:canSave?"linear-gradient(135deg,#379AAB,#2a7a89)":"#1e2130", color:canSave?"#fff":"#64748b", fontSize:13, fontWeight:700, cursor:canSave?"pointer":"default", fontFamily:"inherit" }}>
+          Save Triad →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── TL TRIAD VIEW ─────────────────────────────────────────────────────────────
+function TLTriadView({ triads, T, onOpenTriad }) {
+  const [search, setSearch] = useState("");
+  const filtered = triads.filter(t =>
+    (t.managerName||"").toLowerCase().includes(search.toLowerCase()) ||
+    (t.date||"").includes(search)
+  );
+  const pending = triads.filter(t => !t.acknowledgedAt).length;
+
+  return (
+    <div style={{ padding:"20px 26px" }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:20 }}>
+        {[
+          { label:"Total Triads", val:triads.length, color:T.accent },
+          { label:"Pending", val:pending, color:"#f59e0b" },
+          { label:"Acknowledged", val:triads.filter(t=>t.acknowledgedAt).length, color:"#10b981" },
+        ].map((s,i)=>(
+          <div key={i} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:12, padding:"16px 18px" }}>
+            <div style={{ fontSize:10, fontWeight:700, color:T.muted, textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:8 }}>{s.label}</div>
+            <div style={{ fontSize:28, fontWeight:800, color:T.text }}>{s.val}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ marginBottom:14 }}>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by manager or date..."
+          style={{ padding:"9px 14px", borderRadius:9, border:`1px solid ${T.border}`, background:T.card, color:T.text, fontSize:13, outline:"none", fontFamily:"inherit", width:"100%", maxWidth:340, boxSizing:"border-box" }} />
+      </div>
+
+      <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:12, overflow:"hidden" }}>
+        <table style={{ width:"100%", borderCollapse:"collapse" }}>
+          <thead>
+            <tr style={{ borderBottom:`1px solid ${T.border}` }}>
+              {["Date","Manager","Specialist Reviewed","Follow-Up","Status"].map(h=>(
+                <th key={h} style={{ padding:"10px 14px", textAlign:"left", fontSize:10, fontWeight:700, color:T.muted, textTransform:"uppercase", letterSpacing:"0.05em" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length===0
+              ? <tr><td colSpan={5} style={{ textAlign:"center", padding:36, color:T.muted, fontSize:13 }}>No triads yet.</td></tr>
+              : filtered.map((t,i)=>{
+                const acked = !!t.acknowledgedAt;
+                return (
+                  <tr key={t.id} onClick={()=>onOpenTriad(t)} style={{ borderBottom:i<filtered.length-1?`1px solid ${T.border}`:"none", cursor:"pointer" }}
+                    onMouseEnter={e=>e.currentTarget.style.background=T.hover}
+                    onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    <td style={{ padding:"12px 14px", fontSize:12, color:T.text, fontWeight:500 }}>{t.date}</td>
+                    <td style={{ padding:"12px 14px", fontSize:12, color:T.text }}>{t.managerName||"—"}</td>
+                    <td style={{ padding:"12px 14px", fontSize:12, color:T.muted }}>{t.agentName||"—"}</td>
+                    <td style={{ padding:"12px 14px", fontSize:11, color:T.muted }}>{t.followUpDate||"—"}</td>
+                    <td style={{ padding:"12px 14px" }}>
+                      <span style={{ fontSize:11, fontWeight:600, color:acked?"#10b981":"#f59e0b", background:acked?"#10b98115":"#f59e0b15", padding:"3px 10px", borderRadius:99 }}>
+                        {acked?"✓ Acknowledged":"Pending"}
+                      </span>
+                      {!acked && <span style={{ marginLeft:6, fontSize:10, color:"#ef4444" }}>● review needed</span>}
+                    </td>
+                  </tr>
+                );
+              })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 // ── DASHBOARD VIEW (TL/SPECIALIST) ───────────────────────────────────────────
 function DashboardView({ coachings, warnings, role, T, onOpenCoaching, targets, isSpecialist = false }) {
   const now   = new Date();
@@ -2113,9 +2378,12 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
   const [coachingDraft,      setCoachingDraft]      = useState(null);
   const [warningDraft,       setWarningDraft]       = useState(null);
   const [selectedCoaching,   setSelectedCoaching]   = useState(null);
+  const [showTriadModal,     setShowTriadModal]     = useState(false);
+  const [selectedTriad,      setSelectedTriad]      = useState(null);
   const [profiles,           setProfiles]           = useState([]);
   const [coachings,          setCoachings]          = useState([]);
   const [warnings,           setWarnings]           = useState([]);
+  const [triads,             setTriads]             = useState([]);
   const [loadingCoachings,   setLoadingCoachings]   = useState(true);
 
   // Targets: { [tlName]: number } — persisted in localStorage
@@ -2182,6 +2450,21 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
     fetchData();
   }, []);
 
+  // Fetch triads
+  useEffect(() => {
+    const fetchTriads = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("triads")
+          .select("*")
+          .order("created_at", { ascending: false });
+        if (!error && data) setTriads(data.map(normTriad));
+      } catch (e) {
+        console.error("Error fetching triads:", e);
+      }
+    };
+    fetchTriads();
+  }, []);
 
   const visibleCoachings = isSpecialist
     ? coachings.filter(c=>(c.agentName||"").toLowerCase()===selfName.toLowerCase())
@@ -2351,12 +2634,64 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
     }
   };
 
+  const saveTriad = async (form) => {
+    try {
+      const newTriad = {
+        id: crypto.randomUUID(),
+        created_at: new Date().toISOString(),
+        manager_name: selfName,
+        tl_name: form.tlName,
+        agent_name: form.agentName,
+        coaching_id: form.coachingId || null,
+        date: form.date,
+        strengths: form.strengths,
+        areas_of_improvement: form.areasOfImprovement,
+        action_plan: form.actionPlan,
+        follow_up_date: form.followUpDate,
+        notes: form.notes,
+        status: "Pending",
+      };
+      const { data, error } = await supabase.from("triads").insert([newTriad]).select();
+      if (!error && data) {
+        setTriads(ts => [normTriad(data[0]), ...ts]);
+        setShowTriadModal(false);
+      } else {
+        console.error("Error saving triad:", error);
+      }
+    } catch (e) {
+      console.error("Error in saveTriad:", e);
+    }
+  };
+
+  const acknowledgeTriad = async (id, rating, comment) => {
+    try {
+      const { error } = await supabase.from("triads").update({
+        status: "Acknowledged",
+        tl_rating: rating,
+        tl_comment: comment,
+        acknowledged_at: new Date().toISOString(),
+      }).eq("id", id);
+      if (!error) {
+        setTriads(ts => ts.map(t => t.id === id ? { ...t, status:"Acknowledged", tlRating:rating, tlComment:comment, acknowledgedAt:new Date().toISOString() } : t));
+        setSelectedTriad(null);
+      }
+    } catch (e) {
+      console.error("Error acknowledging triad:", e);
+    }
+  };
+
+  const visibleTriads = isTL
+    ? triads.filter(t => (t.tlName||"").toLowerCase() === selfName.toLowerCase())
+    : triads;
+
   const navItems = [
     { id:"dashboard", icon:"⊞", label:"Dashboard" },
     ...(isTL||isManager   ? [{ id:"coachings", icon:"📋", label:"Coachings" }] : []),
     ...(isSpecialist       ? [{ id:"coachings", icon:"📋", label:"My Coachings" }] : []),
     ...(isTL               ? [{ id:"warnings",  icon:"🚨", label:"Disciplinary" }] : []),
     ...(isHR               ? [{ id:"warnings",  icon:"🚨", label:"Warnings" }] : []),
+    ...(isManager          ? [{ id:"triads",    icon:"🤝", label:"Manager Triad" }] : []),
+    ...(isTL               ? [{ id:"triads",    icon:"🤝", label:"My Triads" }] : []),
   ];
 
   return (
@@ -2398,6 +2733,14 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
                 style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"8px 11px", borderRadius:8, border:"1px solid #ef444440", background:"#ef444412", color:"#ef4444", fontWeight:600, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
                 <span>+</span> New Warning
                 {warningDraft && <span style={{ marginLeft:"auto", fontSize:9, background:"#ef4444", color:"#fff", borderRadius:99, padding:"1px 6px" }}>draft</span>}
+              </button>
+            </div>
+          )}
+          {isManager && (
+            <div style={{ marginTop:10 }}>
+              <button type="button" onClick={()=>{ setActiveTab("triads"); setShowTriadModal(true); }}
+                style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"8px 11px", borderRadius:8, border:`1px solid #14b8a640`, background:"#14b8a612", color:"#14b8a6", fontWeight:600, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
+                <span>+</span> New Triad
               </button>
             </div>
           )}
@@ -2454,6 +2797,8 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
           <CoachingModal T={T} onClose={()=>setShowCoachingModal(false)} onSave={handleSaveCoaching} clientProfiles={profiles} initialForm={coachingDraft} onDraftChange={setCoachingDraft} />
         ) : showWarningModal ? (
           <WarningModal T={T} onClose={()=>setShowWarningModal(false)} onSave={handleSaveWarning} clientProfiles={profiles} initialForm={warningDraft} onDraftChange={setWarningDraft} />
+        ) : (activeTab==="triads" && isManager && showTriadModal) ? (
+          <TriadModal onClose={()=>setShowTriadModal(false)} onSave={saveTriad} profiles={profiles} coachings={coachings} selfName={selfName} T={T} />
         ) : (
           <>
             {activeTab==="dashboard" && (isTL||isSpecialist) && (
@@ -2471,11 +2816,18 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
             {activeTab==="warnings" && (
               <HRView warnings={visibleWarnings} onNewWarning={()=>setShowWarningModal(true)} T={T} onDeleteWarning={isTL ? deleteWarning : null} isTeamLead={isTL} />
             )}
+            {activeTab==="triads" && isManager && !showTriadModal && (
+              <TLTriadView triads={triads} T={T} onOpenTriad={setSelectedTriad} />
+            )}
+            {activeTab==="triads" && isTL && (
+              <TLTriadView triads={visibleTriads} T={T} onOpenTriad={setSelectedTriad} />
+            )}
           </>
         )}
       </div>
 
       {selectedCoaching && <CoachingDetailModal coaching={selectedCoaching} onClose={()=>setSelectedCoaching(null)} onAcknowledge={acknowledgeCoaching} isAgent={isSpecialist} />}
+      {selectedTriad && <TriadDetailModal triad={selectedTriad} onClose={()=>setSelectedTriad(null)} onAcknowledge={acknowledgeTriad} />}
     </div>
   );
 }
