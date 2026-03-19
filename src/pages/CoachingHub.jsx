@@ -1357,9 +1357,63 @@ function DashboardView({ coachings, warnings, role, T, onOpenCoaching, targets, 
     );
   }
 
+  const [drilldown, setDrilldown] = useState(null);
+  // drilldown: { title, coachings?, warnings? }
+
   // For Team Lead (original dashboard)
   return (
     <div style={{ padding:"20px 26px" }}>
+      {drilldown && drilldown.coachings && (
+        <DrilldownModal
+          title={drilldown.title}
+          coachings={drilldown.coachings}
+          T={T}
+          onClose={() => setDrilldown(null)}
+          onOpenCoaching={c => { onOpenCoaching(c); setDrilldown(null); }}
+        />
+      )}
+      {drilldown && drilldown.warnings && (
+        <div style={{ position:"fixed", inset:0, background:"#00000099", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
+          <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:18, width:"100%", maxWidth:620, maxHeight:"85vh", display:"flex", flexDirection:"column", boxShadow:"0 32px 80px #00000070" }}>
+            <div style={{ padding:"18px 22px 14px", borderBottom:`1px solid ${T.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <div style={{ fontSize:15, fontWeight:700, color:T.text }}>{drilldown.title}</div>
+              <button onClick={() => setDrilldown(null)} style={{ background:"none", border:"none", color:T.muted, cursor:"pointer", fontSize:20 }}>×</button>
+            </div>
+            <div style={{ overflowY:"auto", flex:1 }}>
+              <table style={{ width:"100%", borderCollapse:"collapse" }}>
+                <thead style={{ position:"sticky", top:0, background:T.card }}>
+                  <tr style={{ borderBottom:`1px solid ${T.border}` }}>
+                    {["Specialist","Dept","Type","Date","Status"].map(h => (
+                      <th key={h} style={{ padding:"9px 14px", textAlign:"left", fontSize:10, fontWeight:700, color:T.muted, textTransform:"uppercase", letterSpacing:"0.05em" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {drilldown.warnings.length === 0
+                    ? <tr><td colSpan={5} style={{ textAlign:"center", padding:36, color:T.muted, fontSize:13 }}>No warnings found.</td></tr>
+                    : drilldown.warnings.map((w, i) => {
+                      const ws = WARNING_STYLE[w.warningType] || {};
+                      return (
+                        <tr key={w.id} style={{ borderBottom:i<drilldown.warnings.length-1?`1px solid ${T.border}`:"none" }}
+                          onMouseEnter={e=>e.currentTarget.style.background=T.hover}
+                          onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                          <td style={{ padding:"11px 14px", fontSize:12, color:T.text, fontWeight:500 }}>{w.agentName}</td>
+                          <td style={{ padding:"11px 14px", fontSize:11, color:T.muted }}>{w.dept}</td>
+                          <td style={{ padding:"11px 14px" }}><span style={{ fontSize:10, fontWeight:700, color:ws.color, background:ws.bg, padding:"3px 8px", borderRadius:99 }}>{ws.icon} {w.warningType}</span></td>
+                          <td style={{ padding:"11px 14px", fontSize:11, color:T.muted }}>{w.date}</td>
+                          <td style={{ padding:"11px 14px", fontSize:11, fontWeight:600, color:w.acknowledgedAt?"#10b981":"#f59e0b" }}>{w.acknowledgedAt?"✓ Acknowledged":"Pending"}</td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ padding:"12px 22px", borderTop:`1px solid ${T.border}`, fontSize:11, color:T.muted }}>
+              {drilldown.warnings.length} warning{drilldown.warnings.length !== 1 ? "s" : ""}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Alert banner */}
       {showAlert && (
@@ -1397,11 +1451,13 @@ function DashboardView({ coachings, warnings, role, T, onOpenCoaching, targets, 
         </div>
 
         {[
-          { label:"Total Coachings", val:coachings.length, icon:"📋", color:T.accent },
-          { label:"Pending", val:coachings.filter(c=>c.status==="Pending").length, icon:"⏳", color:"#f59e0b" },
-          { label:"Warnings Issued", val:warnings.length, icon:"🚨", color:"#ef4444" },
+          { label:"Total Coachings", val:coachings.length, icon:"📋", color:T.accent, onClick:()=>setDrilldown({ title:"All Coachings", coachings }) },
+          { label:"Pending", val:coachings.filter(c=>c.status==="Pending").length, icon:"⏳", color:"#f59e0b", onClick:()=>setDrilldown({ title:"Pending Coachings", coachings:coachings.filter(c=>c.status==="Pending") }) },
+          { label:"Warnings Issued", val:warnings.length, icon:"🚨", color:"#ef4444", onClick:()=>setDrilldown({ title:"Warnings Issued", warnings }) },
         ].map((s,i)=>(
-          <div key={i} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:12, padding:"16px 18px" }}>
+          <div key={i} onClick={s.onClick} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:12, padding:"16px 18px", cursor:"pointer" }}
+            onMouseEnter={e=>e.currentTarget.style.borderColor=s.color+"60"}
+            onMouseLeave={e=>e.currentTarget.style.borderColor=T.border}>
             <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
               <div style={{ fontSize:10, fontWeight:700, color:T.muted, textTransform:"uppercase", letterSpacing:"0.05em" }}>{s.label}</div>
               <span style={{ fontSize:18 }}>{s.icon}</span>
@@ -1417,7 +1473,10 @@ function DashboardView({ coachings, warnings, role, T, onOpenCoaching, targets, 
           <div style={{ fontSize:12, fontWeight:700, color:T.text, marginBottom:14 }}>EWS Breakdown</div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:14 }}>
             {ewsData.map((e,i)=>(
-              <div key={i} style={{ background:e.bg, borderRadius:10, padding:"12px 14px" }}>
+              <div key={i} onClick={()=>setDrilldown({ title:`EWS: ${e.label}`, coachings:coachings.filter(c=>c.ews===e.label) })}
+                style={{ background:e.bg, borderRadius:10, padding:"12px 14px", cursor:"pointer", transition:"opacity 0.15s" }}
+                onMouseEnter={ev=>ev.currentTarget.style.opacity="0.75"}
+                onMouseLeave={ev=>ev.currentTarget.style.opacity="1"}>
                 <div style={{ fontSize:22, fontWeight:800, color:e.color }}>{e.val}</div>
                 <div style={{ fontSize:11, color:e.color, fontWeight:600 }}>{e.label}</div>
               </div>
@@ -1722,9 +1781,12 @@ function ManagerView({ coachings, warnings, T, onOpenCoaching, targets, onSetTar
   const now      = new Date();
   const [filterMonth, setFilterMonth] = useState(String(now.getMonth()+1).padStart(2,"0"));
   const [filterYear,  setFilterYear]  = useState(String(now.getFullYear()));
-  const [drilldown, setDrilldown]     = useState(null); // {title, coachings}
+  const [drilldown, setDrilldown]       = useState(null); // {title, coachings}
+  const [warnDrill, setWarnDrill]       = useState(null); // warnings drilldown
   const [editingTargets, setEditingTargets] = useState(false);
   const [localTargets, setLocalTargets]     = useState({ ...targets });
+  const [targetTL, setTargetTL]         = useState("");
+  const [targetVal, setTargetVal]       = useState("");
 
   const years=[...new Set(coachings.map(c=>c.date?.slice(0,4)))].filter(Boolean).sort((a,b)=>b-a);
   if (!years.includes(filterYear)) years.unshift(filterYear);
@@ -1800,38 +1862,63 @@ function ManagerView({ coachings, warnings, T, onOpenCoaching, targets, onSetTar
       {editingTargets && (
         <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:12, padding:18, marginBottom:20 }}>
           <div style={{ fontSize:12, fontWeight:700, color:T.text, marginBottom:14 }}>🎯 Monthly Coaching Targets per TL</div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))", gap:12 }}>
-            {allTLs.map(tl=>(
-              <div key={tl.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", background:T.bg, border:`1px solid ${T.border}`, borderRadius:10, padding:"10px 14px" }}>
-                <div>
-                  <div style={{ fontSize:12, fontWeight:600, color:T.text }}>{tl.name}</div>
-                  <div style={{ fontSize:10, color:T.muted }}>{tl.client} · {tl.agentCount} agents</div>
-                </div>
-                <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                  <input
-                    type="number" min="0" max="100"
-                    value={localTargets[tl.name]||""}
-                    onChange={e=>setLocalTargets(t=>({...t,[tl.name]:Number(e.target.value)}))}
-                    placeholder="0"
-                    style={{ width:52, padding:"5px 8px", borderRadius:7, border:`1px solid ${T.accent}60`, background:T.inputBg, color:T.accent, fontSize:13, fontWeight:700, outline:"none", textAlign:"center", fontFamily:"inherit" }}
-                  />
-                  <span style={{ fontSize:11, color:T.muted }}>/ mo</span>
-                </div>
-              </div>
-            ))}
+          {/* Dropdown + input row */}
+          <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:16 }}>
+            <select
+              value={targetTL}
+              onChange={e=>{ setTargetTL(e.target.value); setTargetVal(localTargets[e.target.value]||""); }}
+              style={{ ...sel, flex:1, maxWidth:260 }}
+            >
+              <option value="">Select a Team Lead...</option>
+              {allTLs.map(tl=>(
+                <option key={tl.id} value={tl.name}>{tl.name} — {tl.client}</option>
+              ))}
+            </select>
+            <input
+              type="number" min="0" max="999"
+              value={targetVal}
+              onChange={e=>setTargetVal(e.target.value)}
+              placeholder="Target #"
+              disabled={!targetTL}
+              style={{ width:90, padding:"6px 10px", borderRadius:8, border:`1px solid ${T.accent}60`, background:T.inputBg, color:T.accent, fontSize:13, fontWeight:700, outline:"none", textAlign:"center", fontFamily:"inherit" }}
+            />
+            <span style={{ fontSize:11, color:T.muted }}>/ mo</span>
+            <button
+              disabled={!targetTL}
+              onClick={()=>{ if(targetTL) { setLocalTargets(t=>({...t,[targetTL]:Number(targetVal)||0})); setTargetTL(""); setTargetVal(""); } }}
+              style={{ padding:"6px 16px", borderRadius:8, border:"none", background:targetTL?T.accent:"#1e2130", color:targetTL?"#fff":T.muted, fontSize:12, fontWeight:700, cursor:targetTL?"pointer":"default", fontFamily:"inherit" }}
+            >Set</button>
           </div>
+          {/* Current targets summary */}
+          {Object.entries(localTargets).filter(([,v])=>v>0).length > 0 && (
+            <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+              {Object.entries(localTargets).filter(([,v])=>v>0).map(([name,val])=>(
+                <div key={name} style={{ display:"flex", alignItems:"center", gap:6, background:T.bg, border:`1px solid ${T.border}`, borderRadius:8, padding:"6px 10px" }}>
+                  <span style={{ fontSize:12, color:T.text, fontWeight:600 }}>{name}</span>
+                  <span style={{ fontSize:12, color:T.accent, fontWeight:700 }}>{val}/mo</span>
+                  <button onClick={()=>setLocalTargets(t=>{ const n={...t}; delete n[name]; return n; })}
+                    style={{ background:"none", border:"none", color:T.muted, cursor:"pointer", fontSize:14, lineHeight:1, padding:"0 2px" }}>×</button>
+                </div>
+              ))}
+            </div>
+          )}
+          {Object.entries(localTargets).filter(([,v])=>v>0).length === 0 && (
+            <div style={{ fontSize:12, color:T.muted }}>No targets set yet.</div>
+          )}
         </div>
       )}
 
       {/* KPIs */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:20 }}>
         {[
-          { label:"Total Coachings", val:filteredAll.length, icon:"📋", color:T.accent },
-          { label:"Acknowledged", val:filteredAll.filter(c=>c.status==="Acknowledged").length, icon:"✅", color:"#10b981" },
-          { label:"Attrition Risks", val:filteredAll.filter(c=>c.ews==="Red"||c.ews==="Imminent").length, icon:"⚠️", color:"#ef4444" },
-          { label:"Warnings Issued", val:warnings.length, icon:"🚨", color:"#f59e0b" },
+          { label:"Total Coachings",  val:filteredAll.length, icon:"📋", color:T.accent,   onClick:()=>setDrilldown({title:"All Coachings", coachings:filteredAll}) },
+          { label:"Acknowledged",     val:filteredAll.filter(c=>c.status==="Acknowledged").length, icon:"✅", color:"#10b981", onClick:()=>setDrilldown({title:"Acknowledged Coachings", coachings:filteredAll.filter(c=>c.status==="Acknowledged")}) },
+          { label:"Attrition Risks",  val:filteredAll.filter(c=>c.ews==="Red"||c.ews==="Imminent").length, icon:"⚠️", color:"#ef4444", onClick:()=>setDrilldown({title:"Attrition Risks (Red + Imminent)", coachings:filteredAll.filter(c=>c.ews==="Red"||c.ews==="Imminent")}) },
+          { label:"Warnings Issued",  val:warnings.length, icon:"🚨", color:"#f59e0b",   onClick:()=>setWarnDrill({title:"Warnings Issued", warnings}) },
         ].map((s,i)=>(
-          <div key={i} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:12, padding:"16px 18px" }}>
+          <div key={i} onClick={s.onClick} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:12, padding:"16px 18px", cursor:"pointer" }}
+            onMouseEnter={e=>e.currentTarget.style.borderColor=s.color+"60"}
+            onMouseLeave={e=>e.currentTarget.style.borderColor=T.border}>
             <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
               <div style={{ fontSize:10, fontWeight:700, color:T.muted, textTransform:"uppercase", letterSpacing:"0.05em" }}>{s.label}</div>
               <span style={{ fontSize:18 }}>{s.icon}</span>
@@ -1971,7 +2058,7 @@ function ManagerView({ coachings, warnings, T, onOpenCoaching, targets, onSetTar
         </table>
       </div>
 
-      {/* Drilldown modal */}
+      {/* Drilldown modal — coachings */}
       {drilldown && (
         <DrilldownModal
           title={drilldown.title}
@@ -1980,6 +2067,51 @@ function ManagerView({ coachings, warnings, T, onOpenCoaching, targets, onSetTar
           onClose={()=>setDrilldown(null)}
           onOpenCoaching={onOpenCoaching}
         />
+      )}
+
+      {/* Drilldown modal — warnings */}
+      {warnDrill && (
+        <div style={{ position:"fixed", inset:0, background:"#00000099", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
+          <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:18, width:"100%", maxWidth:680, maxHeight:"85vh", display:"flex", flexDirection:"column", boxShadow:"0 32px 80px #00000070" }}>
+            <div style={{ padding:"18px 22px 14px", borderBottom:`1px solid ${T.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <div style={{ fontSize:15, fontWeight:700, color:T.text }}>{warnDrill.title}</div>
+              <button onClick={()=>setWarnDrill(null)} style={{ background:"none", border:"none", color:T.muted, cursor:"pointer", fontSize:20 }}>×</button>
+            </div>
+            <div style={{ overflowY:"auto", flex:1 }}>
+              <table style={{ width:"100%", borderCollapse:"collapse" }}>
+                <thead style={{ position:"sticky", top:0, background:T.card }}>
+                  <tr style={{ borderBottom:`1px solid ${T.border}` }}>
+                    {["Specialist","Dept","Type","Date","TL","Status"].map(h=>(
+                      <th key={h} style={{ padding:"9px 14px", textAlign:"left", fontSize:10, fontWeight:700, color:T.muted, textTransform:"uppercase", letterSpacing:"0.05em" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {warnDrill.warnings.length===0
+                    ? <tr><td colSpan={6} style={{ textAlign:"center", padding:36, color:T.muted, fontSize:13 }}>No warnings.</td></tr>
+                    : warnDrill.warnings.map((w,i)=>{
+                      const ws=WARNING_STYLE[w.warningType]||{};
+                      return (
+                        <tr key={w.id} style={{ borderBottom:i<warnDrill.warnings.length-1?`1px solid ${T.border}`:"none" }}
+                          onMouseEnter={e=>e.currentTarget.style.background=T.hover}
+                          onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                          <td style={{ padding:"11px 14px", fontSize:12, color:T.text, fontWeight:500 }}>{w.agentName}</td>
+                          <td style={{ padding:"11px 14px", fontSize:11, color:T.muted }}>{w.dept}</td>
+                          <td style={{ padding:"11px 14px" }}><span style={{ fontSize:10, fontWeight:700, color:ws.color, background:ws.bg, padding:"3px 8px", borderRadius:99 }}>{ws.icon} {w.warningType}</span></td>
+                          <td style={{ padding:"11px 14px", fontSize:11, color:T.muted }}>{w.date}</td>
+                          <td style={{ padding:"11px 14px", fontSize:11, color:T.muted }}>{w.createdBy||"—"}</td>
+                          <td style={{ padding:"11px 14px", fontSize:11, fontWeight:600, color:w.acknowledgedAt?"#10b981":"#f59e0b" }}>{w.acknowledgedAt?"✓ Acknowledged":"Pending"}</td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ padding:"12px 22px", borderTop:`1px solid ${T.border}`, fontSize:11, color:T.muted }}>
+              {warnDrill.warnings.length} warning{warnDrill.warnings.length!==1?"s":""}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -113,8 +113,8 @@ export default function App() {
     );
   }
 
-  // Admin panel (only Manager can access)
-  if (showAdmin && profile.role === "Manager") {
+  // Admin panel (only admin === true can access)
+  if (showAdmin && profile.admin === true) {
     return <AdminPage onBack={() => setShowAdmin(false)} />;
   }
 
@@ -123,7 +123,7 @@ export default function App() {
     <CoachingHub
       userProfile={profile}
       onLogout={handleLogout}
-      onOpenAdmin={profile.role === "Manager" ? () => setShowAdmin(true) : null}
+      onOpenAdmin={profile.admin === true ? () => setShowAdmin(true) : null}
     />
   );
 }
