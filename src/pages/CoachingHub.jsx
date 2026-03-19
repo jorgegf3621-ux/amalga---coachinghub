@@ -2019,17 +2019,17 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
         const { data: coachingsData, error: coachingsError } = await supabase
           .from("coachings")
           .select("*")
-          .order("createdAt", { ascending: false });
-        
+          .order("created_at", { ascending: false });
+
         if (!coachingsError && coachingsData) {
           setCoachings(coachingsData);
         }
-        
+
         // Fetch warnings
         const { data: warningsData, error: warningsError } = await supabase
           .from("warnings")
           .select("*")
-          .order("createdAt", { ascending: false });
+          .order("created_at", { ascending: false });
         
         if (!warningsError && warningsData) {
           setWarnings(warningsData);
