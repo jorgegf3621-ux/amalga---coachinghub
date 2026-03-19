@@ -55,6 +55,34 @@ const CLIENT_DEPTS = {
 };
 const CLIENTS_LIST = Object.keys(CLIENT_DEPTS);
 
+// Normalize DB snake_case → UI camelCase
+const normCoaching = (r) => ({
+  ...r,
+  agentName:       r.agent_name       ?? r.agentName ?? "",
+  tlName:          r.tl_name          ?? r.tlName ?? "",
+  expectedBehavior:r.expected_behavior?? r.expectedBehavior ?? "",
+  actionPlan:      r.action_plan      ?? r.actionPlan ?? "",
+  followUpDate:    r.follow_up_date   ?? r.followUpDate ?? "",
+  supervisorNotes: r.supervisor_notes ?? r.supervisorNotes ?? "",
+  agentRating:     r.agent_rating     ?? r.agentRating ?? null,
+  agentComment:    r.agent_comment    ?? r.agentComment ?? "",
+});
+
+const normWarning = (r) => ({
+  ...r,
+  agentName:          r.agent_name          ?? r.agentName ?? "",
+  createdBy:          r.created_by          ?? r.createdBy ?? "",
+  warningType:        r.warning_type        ?? r.warningType ?? "",
+  situationDesc:      r.situation_desc      ?? r.situationDesc ?? "",
+  unfulfilledExp:     r.unfulfilled_exp     ?? r.unfulfilledExp ?? "",
+  followUpPeriod:     r.follow_up_period    ?? r.followUpPeriod ?? "",
+  areasOfConcern:     r.areas_of_concern    ?? r.areasOfConcern ?? "",
+  recommendedActions: r.recommended_actions ?? r.recommendedActions ?? "",
+  employeeStatement:  r.employee_statement  ?? r.employeeStatement ?? "",
+  witness1Name:       r.witness1_name       ?? r.witness1Name ?? "",
+  witness2Name:       r.witness2_name       ?? r.witness2Name ?? "",
+});
+
 // Sample data structure for Team Leads and Agents
 const DATABASE = {
   teamLeads: [
@@ -2022,7 +2050,7 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
           .order("created_at", { ascending: false });
 
         if (!coachingsError && coachingsData) {
-          setCoachings(coachingsData);
+          setCoachings(coachingsData.map(normCoaching));
         }
 
         // Fetch warnings
@@ -2030,9 +2058,9 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
           .from("warnings")
           .select("*")
           .order("created_at", { ascending: false });
-        
+
         if (!warningsError && warningsData) {
-          setWarnings(warningsData);
+          setWarnings(warningsData.map(normWarning));
         }
       } catch (e) {
         console.error("Error fetching data:", e);
@@ -2073,10 +2101,33 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
     try {
       const newCoaching = {
         id: crypto.randomUUID(),
-        createdAt: new Date().toISOString(),
-        tlName: selfName,
+        created_at: new Date().toISOString(),
+        tl_name: selfName,
         status: "Pending",
-        ...form
+        client: form.client,
+        agent_name: form.agentName,
+        dept: form.dept,
+        date: form.date,
+        type: form.type,
+        reason: form.reason,
+        observations: form.observations,
+        expected_behavior: form.expectedBehavior,
+        action_plan: form.actionPlan,
+        follow_up_date: form.followUpDate,
+        supervisor_notes: form.supervisorNotes,
+        incidence_type: form.incidence_type,
+        incidence_count: form.incidence_count,
+        pattern: form.pattern,
+        agent_reason: form.agent_reason,
+        att_agent_commit: form.att_agent_commit,
+        att_tl_commit: form.att_tl_commit,
+        mood: form.mood,
+        red_flag: form.red_flag,
+        other_reason: form.other_reason,
+        company_actions: form.company_actions,
+        att_risk_commit: form.att_risk_commit,
+        ews: form.ews,
+        notes: form.notes,
       };
       
       const { data, error } = await supabase
@@ -2085,7 +2136,7 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
         .select();
       
       if (!error && data) {
-        setCoachings(cs => [data[0], ...cs]);
+        setCoachings(cs => [normCoaching(data[0]), ...cs]);
       } else {
         console.error("Error saving coaching:", error);
       }
@@ -2098,9 +2149,23 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
     try {
       const newWarning = {
         id: crypto.randomUUID(),
-        createdAt: new Date().toISOString(),
-        createdBy: selfName,
-        ...form
+        created_at: new Date().toISOString(),
+        created_by: selfName,
+        client: form.client,
+        agent_name: form.agentName,
+        dept: form.dept,
+        date: form.date,
+        warning_type: form.warningType,
+        situation_desc: form.situationDesc,
+        unfulfilled_exp: form.unfulfilledExp,
+        follow_up_period: form.followUpPeriod,
+        areas_of_concern: form.areasOfConcern,
+        recommended_actions: form.recommendedActions,
+        facts: form.facts,
+        employee_statement: form.employeeStatement,
+        witness1_name: form.witness1Name,
+        witness2_name: form.witness2Name,
+        status: "Pending",
       };
       
       const { data, error } = await supabase
@@ -2109,7 +2174,7 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
         .select();
       
       if (!error && data) {
-        setWarnings(ws => [data[0], ...ws]);
+        setWarnings(ws => [normWarning(data[0]), ...ws]);
       } else {
         console.error("Error saving warning:", error);
       }
