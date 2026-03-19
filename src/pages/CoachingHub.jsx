@@ -493,40 +493,24 @@ function CoachingDetailModal({ coaching, onClose, onAcknowledge }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Coaching Modal (Team Lead creates)
 // ─────────────────────────────────────────────────────────────────────────────
-function CoachingModal({ onClose, onSave, agentsForDropdown = [], clientProfiles = [] }) {
-  const [step, setStep] = useState(1);
-  const [form, setForm] = useState({
-    client: "",
-    agentName: "",
-    dept: "",
+function CoachingModal({ onClose, onSave, agentsForDropdown = [], clientProfiles = [], initialForm = null, onDraftChange }) {
+  const defaultForm = {
+    client: "", agentName: "", dept: "",
     date: new Date().toISOString().split("T")[0],
     type: "",
-    // Performance
-    reason: "",
-    observations: "",
-    expectedBehavior: "",
-    actionPlan: "",
-    followUpDate: "",
-    supervisorNotes: "",
-    // Attendance
-    incidence_type: "",
-    incidence_count: "",
-    pattern: "",
-    agent_reason: "",
-    att_agent_commit: "",
-    att_tl_commit: "",
-    // Attrition
-    mood: "",
-    red_flag: "",
-    other_reason: "",
-    company_actions: "",
-    att_risk_commit: "",
-    // Common
-    ews: "",
-    notes: "",
-  });
+    reason: "", observations: "", expectedBehavior: "", actionPlan: "", followUpDate: "", supervisorNotes: "",
+    incidence_type: "", incidence_count: "", pattern: "", agent_reason: "", att_agent_commit: "", att_tl_commit: "",
+    mood: "", red_flag: "", other_reason: "", company_actions: "", att_risk_commit: "",
+    ews: "", notes: "",
+  };
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState(initialForm || defaultForm);
 
-  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k, v) => setForm((f) => {
+    const updated = { ...f, [k]: v };
+    if (onDraftChange) onDraftChange(updated);
+    return updated;
+  });
 
   // Departments for selected client
   const deptsForClient = form.client ? (CLIENT_DEPTS[form.client] || []) : [];
@@ -810,25 +794,21 @@ function CoachingModal({ onClose, onSave, agentsForDropdown = [], clientProfiles
 // ─────────────────────────────────────────────────────────────────────────────
 // Warning Modal (Team Lead creates)
 // ─────────────────────────────────────────────────────────────────────────────
-function WarningModal({ onClose, onSave, agentsForDropdown = [], clientProfiles = [] }) {
-  const [form, setForm] = useState({
-    client: "",
-    agentName: "",
-    dept: "",
+function WarningModal({ onClose, onSave, agentsForDropdown = [], clientProfiles = [], initialForm = null, onDraftChange }) {
+  const defaultForm = {
+    client: "", agentName: "", dept: "",
     date: new Date().toISOString().split("T")[0],
-    warningType: "",
-    situationDesc: "",
-    unfulfilledExp: "",
-    followUpPeriod: "",
-    areasOfConcern: "",
-    recommendedActions: "",
-    facts: "",
-    employeeStatement: "",
-    witness1Name: "",
-    witness2Name: "",
-  });
+    warningType: "", situationDesc: "", unfulfilledExp: "", followUpPeriod: "",
+    areasOfConcern: "", recommendedActions: "",
+    facts: "", employeeStatement: "", witness1Name: "", witness2Name: "",
+  };
+  const [form, setForm] = useState(initialForm || defaultForm);
 
-  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k, v) => setForm((f) => {
+    const updated = { ...f, [k]: v };
+    if (onDraftChange) onDraftChange(updated);
+    return updated;
+  });
 
   // Departments for selected client
   const deptsForClient = form.client ? (CLIENT_DEPTS[form.client] || []) : [];
@@ -1992,6 +1972,8 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
   const [activeTab,          setActiveTab]          = useState("dashboard");
   const [showCoachingModal,  setShowCoachingModal]  = useState(false);
   const [showWarningModal,   setShowWarningModal]   = useState(false);
+  const [coachingDraft,      setCoachingDraft]      = useState(null);
+  const [warningDraft,       setWarningDraft]       = useState(null);
   const [selectedCoaching,   setSelectedCoaching]   = useState(null);
   const [profiles,           setProfiles]           = useState([]);
   const [coachings,          setCoachings]          = useState([]);
@@ -2076,6 +2058,16 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
   const visibleWarnings = isSpecialist
     ? warnings.filter(w=>(w.agentName||"").toLowerCase()===selfName.toLowerCase())
     : warnings;
+
+  const handleSaveCoaching = async (form) => {
+    await saveCoaching(form);
+    setCoachingDraft(null);
+  };
+
+  const handleSaveWarning = async (form) => {
+    await saveWarning(form);
+    setWarningDraft(null);
+  };
 
   const saveCoaching = async (form) => {
     try {
@@ -2231,10 +2223,12 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
               <button type="button" onClick={()=>setShowCoachingModal(true)}
                 style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"8px 11px", borderRadius:8, border:`1px solid ${T.accent}40`, background:T.accent+"12", color:T.accent, fontWeight:600, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
                 <span>+</span> New Coaching
+                {coachingDraft && <span style={{ marginLeft:"auto", fontSize:9, background:T.accent, color:"#fff", borderRadius:99, padding:"1px 6px" }}>draft</span>}
               </button>
               <button type="button" onClick={()=>setShowWarningModal(true)}
                 style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"8px 11px", borderRadius:8, border:"1px solid #ef444440", background:"#ef444412", color:"#ef4444", fontWeight:600, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
                 <span>+</span> New Warning
+                {warningDraft && <span style={{ marginLeft:"auto", fontSize:9, background:"#ef4444", color:"#fff", borderRadius:99, padding:"1px 6px" }}>draft</span>}
               </button>
             </div>
           )}
@@ -2304,8 +2298,8 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
         )}
       </div>
 
-      {showCoachingModal  && <CoachingModal tl={CURRENT_TL} onClose={()=>setShowCoachingModal(false)} onSave={saveCoaching} clientProfiles={profiles} />}
-      {showWarningModal   && <WarningModal  tl={CURRENT_TL} onClose={()=>setShowWarningModal(false)}  onSave={saveWarning} clientProfiles={profiles} />}
+      {showCoachingModal  && <CoachingModal tl={CURRENT_TL} onClose={()=>setShowCoachingModal(false)} onSave={handleSaveCoaching} clientProfiles={profiles} initialForm={coachingDraft} onDraftChange={setCoachingDraft} />}
+      {showWarningModal   && <WarningModal  tl={CURRENT_TL} onClose={()=>setShowWarningModal(false)}  onSave={handleSaveWarning} clientProfiles={profiles} initialForm={warningDraft}  onDraftChange={setWarningDraft}  />}
       {selectedCoaching   && <CoachingDetailModal coaching={selectedCoaching} onClose={()=>setSelectedCoaching(null)} onAcknowledge={acknowledgeCoaching} />}
     </div>
   );
