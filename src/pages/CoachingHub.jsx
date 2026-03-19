@@ -493,7 +493,7 @@ function CoachingDetailModal({ coaching, onClose, onAcknowledge }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Coaching Modal (Team Lead creates)
 // ─────────────────────────────────────────────────────────────────────────────
-function CoachingModal({ onClose, onSave, agentsForDropdown = [], clientProfiles = [], initialForm = null, onDraftChange }) {
+function CoachingModal({ onClose, onSave, agentsForDropdown = [], clientProfiles = [], initialForm = null, onDraftChange, T = THEMES.dark }) {
   const defaultForm = {
     client: "", agentName: "", dept: "",
     date: new Date().toISOString().split("T")[0],
@@ -536,14 +536,14 @@ function CoachingModal({ onClose, onSave, agentsForDropdown = [], clientProfiles
   const canNext = step === 1 ? canNext1 : canNext2;
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 20 }}>
-      <div style={{ background: "#13151f", border: "1px solid #1e2130", borderRadius: 18, width: "100%", maxWidth: 560, maxHeight: "90vh", display: "flex", flexDirection: "column" }}>
-        <div style={{ padding: "20px 26px 14px", borderBottom: "1px solid #1e2130", flexShrink: 0 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#f1f5f9" }}>New Coaching</h3>
-            <button type="button" onClick={onClose} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: 20 }}>
-              ×
+    <div style={{ padding: "24px 26px", maxWidth: 700, margin: "0 auto" }}>
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 18, display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: "20px 26px 14px", borderBottom: `1px solid ${T.border}`, flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+            <button type="button" onClick={onClose} style={{ background: "none", border: `1px solid ${T.border}`, borderRadius: 8, color: T.muted, cursor: "pointer", fontSize: 12, padding: "5px 12px", fontFamily: "inherit" }}>
+              ← Back
             </button>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>New Coaching</h3>
           </div>
 
           <div style={{ display: "flex", gap: 6, marginTop: 12, alignItems: "center" }}>
@@ -572,7 +572,7 @@ function CoachingModal({ onClose, onSave, agentsForDropdown = [], clientProfiles
           </div>
         </div>
 
-        <div style={{ overflowY: "auto", flex: 1, padding: "20px 26px" }}>
+        <div style={{ padding: "20px 26px" }}>
           {step === 1 && (
             <>
               <Field label="Client" required>
@@ -732,8 +732,8 @@ function CoachingModal({ onClose, onSave, agentsForDropdown = [], clientProfiles
           )}
         </div>
 
-        <div style={{ padding: "14px 26px", borderTop: "1px solid #1e2130", display: "flex", gap: 8, flexShrink: 0 }}>
-          <button type="button" onClick={onClose} style={{ padding: "9px 18px", borderRadius: 8, border: "1px solid #1e2130", background: "transparent", color: "#64748b", fontSize: 12, cursor: "pointer" }}>
+        <div style={{ padding: "14px 26px", borderTop: `1px solid ${T.border}`, display: "flex", gap: 8, flexShrink: 0 }}>
+          <button type="button" onClick={onClose} style={{ padding: "9px 18px", borderRadius: 8, border: `1px solid ${T.border}`, background: "transparent", color: T.muted, fontSize: 12, cursor: "pointer" }}>
             Cancel
           </button>
 
@@ -794,7 +794,7 @@ function CoachingModal({ onClose, onSave, agentsForDropdown = [], clientProfiles
 // ─────────────────────────────────────────────────────────────────────────────
 // Warning Modal (Team Lead creates)
 // ─────────────────────────────────────────────────────────────────────────────
-function WarningModal({ onClose, onSave, agentsForDropdown = [], clientProfiles = [], initialForm = null, onDraftChange }) {
+function WarningModal({ onClose, onSave, agentsForDropdown = [], clientProfiles = [], initialForm = null, onDraftChange, T = THEMES.dark }) {
   const defaultForm = {
     client: "", agentName: "", dept: "",
     date: new Date().toISOString().split("T")[0],
@@ -823,16 +823,16 @@ function WarningModal({ onClose, onSave, agentsForDropdown = [], clientProfiles 
   const canSave = form.client && form.dept && form.agentName && form.warningType && form.date;
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 20 }}>
-      <div style={{ background: "#13151f", border: "1px solid #1e2130", borderRadius: 18, width: "100%", maxWidth: 520, maxHeight: "90vh", display: "flex", flexDirection: "column" }}>
-        <div style={{ padding: "20px 26px 14px", borderBottom: "1px solid #1e2130", flexShrink: 0, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#f1f5f9" }}>🚨 Disciplinary Action</h3>
-          <button type="button" onClick={onClose} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: 20 }}>
-            ×
+    <div style={{ padding: "24px 26px", maxWidth: 700, margin: "0 auto" }}>
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 18, display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: "20px 26px 14px", borderBottom: `1px solid ${T.border}`, flexShrink: 0, display: "flex", alignItems: "center", gap: 12 }}>
+          <button type="button" onClick={onClose} style={{ background: "none", border: `1px solid ${T.border}`, borderRadius: 8, color: T.muted, cursor: "pointer", fontSize: 12, padding: "5px 12px", fontFamily: "inherit" }}>
+            ← Back
           </button>
+          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>🚨 Disciplinary Action</h3>
         </div>
 
-        <div style={{ overflowY: "auto", flex: 1, padding: "20px 26px" }}>
+        <div style={{ padding: "20px 26px" }}>
           <Field label="Warning Type" required>
             <div style={{ display: "flex", gap: 8 }}>
               {Object.entries(WARNING_STYLE).map(([type, s]) => (
@@ -944,8 +944,8 @@ function WarningModal({ onClose, onSave, agentsForDropdown = [], clientProfiles 
             ))}
         </div>
 
-        <div style={{ padding: "14px 26px", borderTop: "1px solid #1e2130", display: "flex", gap: 8, justifyContent: "flex-end", flexShrink: 0 }}>
-          <button type="button" onClick={onClose} style={{ padding: "9px 18px", borderRadius: 8, border: "1px solid #1e2130", background: "transparent", color: "#64748b", fontSize: 12, cursor: "pointer" }}>
+        <div style={{ padding: "14px 26px", borderTop: `1px solid ${T.border}`, display: "flex", gap: 8, justifyContent: "flex-end", flexShrink: 0 }}>
+          <button type="button" onClick={onClose} style={{ padding: "9px 18px", borderRadius: 8, border: `1px solid ${T.border}`, background: "transparent", color: T.muted, fontSize: 12, cursor: "pointer" }}>
             Cancel
           </button>
           <button
@@ -2281,26 +2281,32 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
         </div>
 
         {/* Route views */}
-        {activeTab==="dashboard" && (isTL||isSpecialist) && (
-          <DashboardView coachings={visibleCoachings} warnings={visibleWarnings} role={role} T={T} onOpenCoaching={setSelectedCoaching} targets={targets} isSpecialist={isSpecialist} />
-        )}
-        {activeTab==="dashboard" && isManager && (
-          <ManagerView coachings={coachings} warnings={warnings} T={T} onOpenCoaching={setSelectedCoaching} targets={targets} onSetTargets={handleSetTargets} profiles={profiles} />
-        )}
-        {activeTab==="dashboard" && isHR && (
-          <HRView warnings={visibleWarnings} onNewWarning={()=>setShowWarningModal(true)} T={T} />
-        )}
-        {activeTab==="coachings" && (
-          <CoachingsListView coachings={visibleCoachings} isSpecialist={isSpecialist} T={T} onOpenCoaching={setSelectedCoaching} onDeliver={deliverCoaching} onDeleteCoaching={!isSpecialist ? deleteCoaching : null} />
-        )}
-        {activeTab==="warnings" && (
-          <HRView warnings={visibleWarnings} onNewWarning={()=>setShowWarningModal(true)} T={T} onDeleteWarning={isTL ? deleteWarning : null} isTeamLead={isTL} />
+        {showCoachingModal ? (
+          <CoachingModal T={T} onClose={()=>setShowCoachingModal(false)} onSave={handleSaveCoaching} clientProfiles={profiles} initialForm={coachingDraft} onDraftChange={setCoachingDraft} />
+        ) : showWarningModal ? (
+          <WarningModal T={T} onClose={()=>setShowWarningModal(false)} onSave={handleSaveWarning} clientProfiles={profiles} initialForm={warningDraft} onDraftChange={setWarningDraft} />
+        ) : (
+          <>
+            {activeTab==="dashboard" && (isTL||isSpecialist) && (
+              <DashboardView coachings={visibleCoachings} warnings={visibleWarnings} role={role} T={T} onOpenCoaching={setSelectedCoaching} targets={targets} isSpecialist={isSpecialist} />
+            )}
+            {activeTab==="dashboard" && isManager && (
+              <ManagerView coachings={coachings} warnings={warnings} T={T} onOpenCoaching={setSelectedCoaching} targets={targets} onSetTargets={handleSetTargets} profiles={profiles} />
+            )}
+            {activeTab==="dashboard" && isHR && (
+              <HRView warnings={visibleWarnings} onNewWarning={()=>setShowWarningModal(true)} T={T} />
+            )}
+            {activeTab==="coachings" && (
+              <CoachingsListView coachings={visibleCoachings} isSpecialist={isSpecialist} T={T} onOpenCoaching={setSelectedCoaching} onDeliver={deliverCoaching} onDeleteCoaching={!isSpecialist ? deleteCoaching : null} />
+            )}
+            {activeTab==="warnings" && (
+              <HRView warnings={visibleWarnings} onNewWarning={()=>setShowWarningModal(true)} T={T} onDeleteWarning={isTL ? deleteWarning : null} isTeamLead={isTL} />
+            )}
+          </>
         )}
       </div>
 
-      {showCoachingModal  && <CoachingModal tl={CURRENT_TL} onClose={()=>setShowCoachingModal(false)} onSave={handleSaveCoaching} clientProfiles={profiles} initialForm={coachingDraft} onDraftChange={setCoachingDraft} />}
-      {showWarningModal   && <WarningModal  tl={CURRENT_TL} onClose={()=>setShowWarningModal(false)}  onSave={handleSaveWarning} clientProfiles={profiles} initialForm={warningDraft}  onDraftChange={setWarningDraft}  />}
-      {selectedCoaching   && <CoachingDetailModal coaching={selectedCoaching} onClose={()=>setSelectedCoaching(null)} onAcknowledge={acknowledgeCoaching} />}
+      {selectedCoaching && <CoachingDetailModal coaching={selectedCoaching} onClose={()=>setSelectedCoaching(null)} onAcknowledge={acknowledgeCoaching} />}
     </div>
   );
 }
