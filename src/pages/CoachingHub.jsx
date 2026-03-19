@@ -2252,12 +2252,6 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
     fetchData();
   }, []);
 
-  // Reset activeTab to dashboard when role changes to Manager
-  useEffect(() => {
-    if (role === "Manager" && activeTab !== "dashboard") {
-      setActiveTab("dashboard");
-    }
-  }, [role, activeTab]);
 
   const visibleCoachings = isSpecialist
     ? coachings.filter(c=>(c.agentName||"").toLowerCase()===selfName.toLowerCase())
