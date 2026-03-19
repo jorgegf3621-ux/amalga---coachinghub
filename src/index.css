@@ -1,0 +1,33 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Questrial&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Poppins', 'Questrial', sans-serif;
+  background: #f4fbfc;
+  color: #434343;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+input, textarea, select, button {
+  font-family: 'Poppins', 'Questrial', sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f4fbfc;
+}
+::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #379AAB;
+}
