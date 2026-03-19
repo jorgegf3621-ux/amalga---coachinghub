@@ -56,17 +56,22 @@ const CLIENT_DEPTS = {
 const CLIENTS_LIST = Object.keys(CLIENT_DEPTS);
 
 // Normalize DB snake_case → UI camelCase
-const normCoaching = (r) => ({
-  ...r,
-  agentName:       r.agent_name       ?? r.agentName ?? "",
-  tlName:          r.tl_name          ?? r.tlName ?? "",
-  expectedBehavior:r.expected_behavior?? r.expectedBehavior ?? "",
-  actionPlan:      r.action_plan      ?? r.actionPlan ?? "",
-  followUpDate:    r.follow_up_date   ?? r.followUpDate ?? "",
-  supervisorNotes: r.supervisor_notes ?? r.supervisorNotes ?? "",
-  agentRating:     r.agent_rating     ?? r.agentRating ?? null,
-  agentComment:    r.agent_comment    ?? r.agentComment ?? "",
-});
+const normCoaching = (r) => {
+  const extra = r.extra_data || {};
+  return {
+    ...r,
+    agentName:       r.agent_name       ?? r.agentName ?? "",
+    tlName:          r.tl_name          ?? r.tlName ?? "",
+    expectedBehavior:r.expected_behavior?? r.expectedBehavior ?? "",
+    actionPlan:      r.action_plan      ?? r.actionPlan ?? "",
+    followUpDate:    r.follow_up_date   ?? r.followUpDate ?? "",
+    supervisorNotes: r.supervisor_notes ?? r.supervisorNotes ?? "",
+    agentRating:     r.agent_rating     ?? r.agentRating ?? null,
+    agentComment:    r.agent_comment    ?? r.agentComment ?? "",
+    // Spread all extra_data fields to top level
+    ...extra,
+  };
+};
 
 const normWarning = (r) => ({
   ...r,
@@ -181,7 +186,7 @@ function Field({ label, required, hint, children }) {
   );
 }
 
-function RadioGroup({ options, value, onChange, colors = {} }) {
+function RadioGroup({ options, value, onChange, colors = {}, T = THEMES.dark }) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
       {options.map((opt) => {
@@ -195,12 +200,13 @@ function RadioGroup({ options, value, onChange, colors = {} }) {
             style={{
               padding: "6px 13px",
               borderRadius: 8,
-              border: `1.5px solid ${active ? c : "#1e2130"}`,
+              border: `1.5px solid ${active ? c : T.border}`,
               background: active ? c + "22" : "transparent",
-              color: active ? c : "#64748b",
+              color: active ? c : T.muted,
               fontSize: 12,
               fontWeight: 600,
               cursor: "pointer",
+              fontFamily: "inherit",
             }}
           >
             {opt}
@@ -278,9 +284,14 @@ function CoachingDetailModal({ coaching, onClose, onAcknowledge, isAgent = false
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState("");
+  const [submitted, setSubmitted] = useState(false);
   const acknowledged = coaching.status === "Acknowledged";
 
-  const handleAcknowledge = () => onAcknowledge(coaching.id, rating, comment);
+  const handleAcknowledge = () => {
+    onAcknowledge(coaching.id, rating, comment);
+    setSubmitted(true);
+    setTimeout(onClose, 1200);
+  };
 
   const tc = TYPE_COLOR[coaching.type] || "#64748b";
   const ews = EWS_STYLE[coaching.ews] || {};
@@ -400,6 +411,69 @@ function CoachingDetailModal({ coaching, onClose, onAcknowledge, isAgent = false
             </div>
           </div>
 
+          {/* ── New coaching types ── */}
+          {coaching.type === "General coaching" && (
+            <>
+              {coaching.mood && <Section title="Mood" content={coaching.mood} />}
+              {coaching.kpiPerformance && <Section title="Overall KPI Performance" content={coaching.kpiPerformance} />}
+              {coaching.kpisDiscussed && <Section title="Main KPIs Discussed" content={coaching.kpisDiscussed} />}
+              {coaching.kpiRiskFlag === "Yes" && coaching.kpiRiskDetail && <Section title="KPI Risk Detail" content={coaching.kpiRiskDetail} />}
+              {coaching.prodQualityNotes && <Section title="Productivity / Quality Notes" content={coaching.prodQualityNotes} />}
+              {coaching.prodRiskFlag === "Yes" && coaching.prodRiskDetail && <Section title="Productivity / Quality Risk" content={coaching.prodRiskDetail} />}
+              {coaching.genAttNotes && <Section title="Attendance Notes" content={coaching.genAttNotes} />}
+              {coaching.genAttRiskFlag === "Yes" && coaching.genAttRiskDetail && <Section title="Attendance Risk" content={coaching.genAttRiskDetail} />}
+            </>
+          )}
+
+          {coaching.type === "Productivity" && (
+            <>
+              {coaching.mood && <Section title="Mood" content={coaching.mood} />}
+              {coaching.currentProductivity && <Section title="Current Productivity" content={coaching.currentProductivity} />}
+              {coaching.productivityQuality && <Section title="Productivity Quality" content={coaching.productivityQuality} />}
+              {coaching.rootCause && <Section title="Root Cause" content={coaching.rootCause} />}
+              {coaching.prodComment && <Section title="Additional Comments" content={coaching.prodComment} />}
+              {coaching.agentCommit && <Section title="Agent's Commitment" content={coaching.agentCommit} />}
+              {coaching.tlCommit && <Section title="Team Lead Commitment" content={coaching.tlCommit} />}
+            </>
+          )}
+
+          {coaching.type === "Attendance" && (
+            coaching.attendanceProblem ? (
+              <>
+                {coaching.mood && <Section title="Mood" content={coaching.mood} />}
+                <Section title="Attendance Problem" content={coaching.attendanceProblem} />
+                {coaching.attRootCause && <Section title="Root Cause" content={coaching.attRootCause} />}
+                {coaching.agentCommit && <Section title="Agent's Commitment" content={coaching.agentCommit} />}
+                {coaching.tlCommit && <Section title="Team Lead Commitment" content={coaching.tlCommit} />}
+              </>
+            ) : (
+              <>
+                <Section title="Incident Type" content={coaching.incidence_type} />
+                <Section title="Number of Incidents" content={coaching.incidence_count} />
+                {coaching.pattern && <Section title="Pattern Detected" content={coaching.pattern} />}
+                {coaching.agent_reason && <Section title="Agent's Explanation" content={coaching.agent_reason} />}
+                {coaching.att_agent_commit && <Section title="Agent Commitment" content={coaching.att_agent_commit} />}
+                {coaching.att_tl_commit && <Section title="Team Lead Commitment" content={coaching.att_tl_commit} />}
+              </>
+            )
+          )}
+
+          {(coaching.type === "Attrition risk" || coaching.type === "Attrition Risk") && (
+            <>
+              {coaching.mood && <Section title="Mood" content={coaching.mood} />}
+              {(coaching.redFlag || coaching.red_flag) && (
+                <Section title="Red Flag" content={
+                  (coaching.redFlag || coaching.red_flag) === "Other"
+                    ? (coaching.otherReason || coaching.other_reason)
+                    : (coaching.redFlag || coaching.red_flag)
+                } />
+              )}
+              {(coaching.companyActions || coaching.company_actions) && <Section title="Company Actions" content={coaching.companyActions || coaching.company_actions} />}
+              {(coaching.agentCommit || coaching.att_risk_commit) && <Section title="Agent Commitment" content={coaching.agentCommit || coaching.att_risk_commit} />}
+            </>
+          )}
+
+          {/* ── Legacy type (Performance) ── */}
           {coaching.type === "Performance" && (
             <>
               <Section title="Reason for Coaching" content={coaching.reason} />
@@ -407,9 +481,7 @@ function CoachingDetailModal({ coaching, onClose, onAcknowledge, isAgent = false
               <Section title="Expected Behavior" content={coaching.expectedBehavior} isBullets />
               <Section title="Action Plan" content={coaching.actionPlan} isBullets />
               <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#14b8a6", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
-                  Follow-Up
-                </div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#14b8a6", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Follow-Up</div>
                 <div style={{ display: "flex", gap: 12 }}>
                   <div style={{ background: "#0d0f18", borderRadius: 8, padding: "10px 14px", flex: 1 }}>
                     <div style={{ fontSize: 10, color: "#64748b", marginBottom: 3 }}>FOLLOW-UP DATE</div>
@@ -421,26 +493,6 @@ function CoachingDetailModal({ coaching, onClose, onAcknowledge, isAgent = false
                   </div>
                 </div>
               </div>
-            </>
-          )}
-
-          {coaching.type === "Attendance" && (
-            <>
-              <Section title="Incident Type" content={coaching.incidence_type} />
-              <Section title="Number of Incidents" content={coaching.incidence_count} />
-              {coaching.pattern && <Section title="Pattern Detected" content={coaching.pattern} />}
-              {coaching.agent_reason && <Section title="Agent's Explanation" content={coaching.agent_reason} />}
-              <Section title="Agent Commitment" content={coaching.att_agent_commit} />
-              <Section title="Team Lead Commitment" content={coaching.att_tl_commit} />
-            </>
-          )}
-
-          {coaching.type === "Attrition Risk" && (
-            <>
-              <Section title="Agent Mood" content={coaching.mood} />
-              <Section title="Red Flag" content={coaching.red_flag === "Other" ? coaching.other_reason : coaching.red_flag} />
-              <Section title="Company Actions" content={coaching.company_actions} />
-              {coaching.att_risk_commit && <Section title="Agent Commitment" content={coaching.att_risk_commit} />}
             </>
           )}
 
@@ -528,16 +580,43 @@ function CoachingDetailModal({ coaching, onClose, onAcknowledge, isAgent = false
 // ─────────────────────────────────────────────────────────────────────────────
 // Coaching Modal (Team Lead creates)
 // ─────────────────────────────────────────────────────────────────────────────
+function WarningDeliveredSection({ form, set, T }) {
+  return (
+    <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${T.border}` }}>
+      <Field label="Was a warning delivered?">
+        <RadioGroup T={T} options={["Yes", "No"]} value={form.warningDelivered} onChange={v => set("warningDelivered", v)} colors={{ Yes: "#ef4444", No: "#10b981" }} />
+      </Field>
+      {form.warningDelivered === "Yes" && (
+        <Field label="Warning Type" required>
+          <RadioGroup T={T} options={["Verbal Warning", "Written Warning", "Final Warning"]} value={form.warningType} onChange={v => set("warningType", v)} colors={{ "Verbal Warning": "#f59e0b", "Written Warning": "#ef4444", "Final Warning": "#7c3aed" }} />
+        </Field>
+      )}
+    </div>
+  );
+}
+
 function CoachingModal({ onClose, onSave, agentsForDropdown = [], clientProfiles = [], initialForm = null, onDraftChange, T = THEMES.dark }) {
   const defaultForm = {
-    client: "", agentName: "", dept: "",
+    client: "", dept: "", agentName: "",
     date: new Date().toISOString().split("T")[0],
-    type: "",
-    reason: "", observations: "", expectedBehavior: "", actionPlan: "", followUpDate: "", supervisorNotes: "",
-    incidence_type: "", incidence_count: "", pattern: "", agent_reason: "", att_agent_commit: "", att_tl_commit: "",
-    mood: "", red_flag: "", other_reason: "", company_actions: "", att_risk_commit: "",
-    ews: "", notes: "",
+    coachingReason: "",
+    // Shared
+    mood: "", ews: "", notes: "",
+    // General coaching
+    kpiPerformance: "", kpisDiscussed: "", kpiRiskFlag: "", kpiRiskDetail: "",
+    prodQualityNotes: "", prodRiskFlag: "", prodRiskDetail: "",
+    genAttNotes: "", genAttRiskFlag: "", genAttRiskDetail: "",
+    // Productivity
+    currentProductivity: "", productivityQuality: "", rootCause: "", prodComment: "",
+    agentCommit: "", tlCommit: "",
+    // Attendance
+    attendanceProblem: "", attRootCause: "",
+    // Attrition risk
+    redFlag: "", otherReason: "", companyActions: "",
+    // Warning section (all types)
+    warningDelivered: "", warningType: "",
   };
+
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(initialForm || defaultForm);
 
@@ -547,32 +626,44 @@ function CoachingModal({ onClose, onSave, agentsForDropdown = [], clientProfiles
     return updated;
   });
 
-  // Departments for selected client
   const deptsForClient = form.client ? (CLIENT_DEPTS[form.client] || []) : [];
-
-  // Filter agents by client AND department
   const agentsForClient = clientProfiles.filter(p =>
     p.role === "Agent" &&
     (!form.client || p.client === form.client) &&
     (!form.dept || p.dept === form.dept)
   );
 
-  const canNext1 = form.client && form.dept && form.agentName && form.date && form.type;
+  // Theme-aware input styles
+  const inpT = { ...inp, background: T.inputBg, color: T.text, border: `1px solid ${T.border}` };
+  const taT = { ...ta, background: T.inputBg, color: T.text, border: `1px solid ${T.border}` };
 
-  const canNext2 =
-    form.type === "Performance"
-      ? !!(form.reason && form.observations && form.expectedBehavior && form.actionPlan)
-      : form.type === "Attendance"
-      ? !!(form.incidence_type && form.incidence_count && form.att_agent_commit && form.att_tl_commit)
-      : form.type === "Attrition Risk"
-      ? !!(form.mood && form.red_flag && form.company_actions && (form.red_flag !== "Other" || form.other_reason))
-      : true;
+  const MOOD_OPTIONS_GENERAL = ["Excited!", "Happy!", "Neutral", "Focused", "Unmotivated", "Other"];
+  const MOOD_OPTIONS = ["Excited!", "Happy!", "Neutral", "Focused"];
+  const REASON_COLORS = { "General coaching": "#14b8a6", Productivity: "#6366f1", Attendance: "#f59e0b", "Attrition risk": "#ef4444" };
+
+  const canNext1 = !!(form.client && form.dept && form.agentName && form.date && form.coachingReason);
+
+  const canNext2 = (() => {
+    switch (form.coachingReason) {
+      case "General coaching":
+        return !!(form.mood && form.kpiPerformance && form.kpisDiscussed);
+      case "Productivity":
+        return !!(form.mood && form.currentProductivity && form.productivityQuality && form.rootCause && form.agentCommit && form.tlCommit);
+      case "Attendance":
+        return !!(form.mood && form.attendanceProblem && form.attRootCause && form.agentCommit && form.tlCommit);
+      case "Attrition risk":
+        return !!(form.mood && form.redFlag && form.companyActions && (form.redFlag !== "Other" || form.otherReason));
+      default: return false;
+    }
+  })();
 
   const canNext = step === 1 ? canNext1 : canNext2;
 
   return (
     <div style={{ padding: "24px 26px", maxWidth: 700, margin: "0 auto" }}>
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 18, display: "flex", flexDirection: "column" }}>
+
+        {/* Header + stepper */}
         <div style={{ padding: "20px 26px 14px", borderBottom: `1px solid ${T.border}`, flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
             <button type="button" onClick={onClose} style={{ background: "none", border: `1px solid ${T.border}`, borderRadius: 8, color: T.muted, cursor: "pointer", fontSize: 12, padding: "5px 12px", fontFamily: "inherit" }}>
@@ -580,24 +671,10 @@ function CoachingModal({ onClose, onSave, agentsForDropdown = [], clientProfiles
             </button>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>New Coaching</h3>
           </div>
-
-          <div style={{ display: "flex", gap: 6, marginTop: 12, alignItems: "center" }}>
-            {["Basic Info", form.type || "Type", "Close Out"].map((s, i) => (
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            {["Basic Info", form.coachingReason || "Reason", "Close Out"].map((s, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <div
-                  style={{
-                    width: 20,
-                    height: 20,
-                    borderRadius: "50%",
-                    background: step >= i + 1 ? "#14b8a6" : "#1e2130",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 10,
-                    fontWeight: 700,
-                    color: step >= i + 1 ? "#fff" : "#64748b",
-                  }}
-                >
+                <div style={{ width: 20, height: 20, borderRadius: "50%", background: step >= i + 1 ? "#14b8a6" : "#1e2130", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: step >= i + 1 ? "#fff" : "#64748b" }}>
                   {i + 1}
                 </div>
                 <span style={{ fontSize: 11, color: step === i + 1 ? "#14b8a6" : "#64748b", fontWeight: step === i + 1 ? 700 : 400 }}>{s}</span>
@@ -607,216 +684,223 @@ function CoachingModal({ onClose, onSave, agentsForDropdown = [], clientProfiles
           </div>
         </div>
 
+        {/* Body */}
         <div style={{ padding: "20px 26px" }}>
+
+          {/* ── Step 1: Basic Info ── */}
           {step === 1 && (
             <>
               <Field label="Client" required>
-                <select
-                  value={form.client}
-                  onChange={(e) => { set("client", e.target.value); set("dept", ""); set("agentName", ""); }}
-                  style={inp}
-                >
+                <select value={form.client} onChange={(e) => { set("client", e.target.value); set("dept", ""); set("agentName", ""); }} style={inpT}>
                   <option value="">Select a client...</option>
                   {CLIENTS_LIST.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </Field>
-
               {form.client && (
                 <Field label="Department" required>
-                  <select
-                    value={form.dept}
-                    onChange={(e) => { set("dept", e.target.value); set("agentName", ""); }}
-                    style={inp}
-                  >
+                  <select value={form.dept} onChange={(e) => { set("dept", e.target.value); set("agentName", ""); }} style={inpT}>
                     <option value="">Select a department...</option>
                     {deptsForClient.map(d => <option key={d} value={d}>{d}</option>)}
                   </select>
                 </Field>
               )}
-
               {form.dept && (
-                <Field
-                  label="Specialist"
-                  required
-                  hint={agentsForClient.length ? `${agentsForClient.length} specialist(s) in ${form.dept}` : "No specialists registered for this department yet"}
-                >
+                <Field label="Specialist" required hint={agentsForClient.length ? `${agentsForClient.length} specialist(s) in ${form.dept}` : "No specialists registered for this department yet"}>
                   {agentsForClient.length ? (
-                    <select value={form.agentName} onChange={e => set("agentName", e.target.value)} style={inp}>
+                    <select value={form.agentName} onChange={e => set("agentName", e.target.value)} style={inpT}>
                       <option value="">Select a specialist...</option>
                       {agentsForClient.map(a => <option key={a.id} value={a.full_name}>{a.full_name}</option>)}
                     </select>
                   ) : (
-                    <input value={form.agentName} onChange={e => set("agentName", e.target.value)} placeholder="Type specialist name..." style={inp} />
+                    <input value={form.agentName} onChange={e => set("agentName", e.target.value)} placeholder="Type specialist name..." style={inpT} />
                   )}
                 </Field>
               )}
-
               <Field label="Date" required>
-                <input type="date" value={form.date} onChange={(e) => set("date", e.target.value)} style={inp} />
+                <input type="date" value={form.date} onChange={(e) => set("date", e.target.value)} style={inpT} />
               </Field>
-
-              <Field label="Coaching Type" required>
-                <RadioGroup options={["Performance", "Attendance", "Attrition Risk"]} value={form.type} onChange={(v) => set("type", v)} colors={TYPE_COLOR} />
-              </Field>
-            </>
-          )}
-
-          {step === 2 && form.type === "Performance" && (
-            <>
-              <Field label="Reason for Coaching" required hint="Brief explanation of why this coaching is happening.">
-                <textarea value={form.reason} onChange={(e) => set("reason", e.target.value)} placeholder="Describe the reason..." style={{ ...ta, minHeight: 70 }} />
-              </Field>
-              <Field label="Observations" required hint="Describe only observed facts — no judgments.">
-                <BulletInput value={form.observations} onChange={(v) => set("observations", v)} placeholder="Observed item..." />
-              </Field>
-              <Field label="Expected Behavior" required hint="What is the standard expected from the specialist?">
-                <BulletInput value={form.expectedBehavior} onChange={(v) => set("expectedBehavior", v)} placeholder="Expected item..." />
-              </Field>
-              <Field label="Action Plan" required hint="2–3 clear, actionable steps.">
-                <BulletInput value={form.actionPlan} onChange={(v) => set("actionPlan", v)} placeholder="Action item..." />
-              </Field>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <Field label="Follow-Up Date">
-                  <input type="date" value={form.followUpDate} onChange={(e) => set("followUpDate", e.target.value)} style={inp} />
-                </Field>
-                <Field label="Supervisor Notes">
-                  <input value={form.supervisorNotes} onChange={(e) => set("supervisorNotes", e.target.value)} placeholder="Optional notes..." style={inp} />
-                </Field>
-              </div>
-            </>
-          )}
-
-          {step === 2 && form.type === "Attendance" && (
-            <>
-              <Field label="Incident Type" required>
-                <RadioGroup options={["Absence", "Tardiness", "Early Leave", "Mixed Pattern"]} value={form.incidence_type} onChange={(v) => set("incidence_type", v)} />
-              </Field>
-              <Field label="Number of Incidents This Period" required>
-                <input type="number" value={form.incidence_count} onChange={(e) => set("incidence_count", e.target.value)} placeholder="e.g. 3" style={inp} />
-              </Field>
-              <Field label="Pattern Detected">
-                <RadioGroup options={["Monday", "Friday", "Post-Day Off", "Random", "No Clear Pattern"]} value={form.pattern} onChange={(v) => set("pattern", v)} />
-              </Field>
-              <Field label="Agent's Explanation">
-                <textarea value={form.agent_reason} onChange={(e) => set("agent_reason", e.target.value)} placeholder="What explanation did the specialist give?" style={ta} />
-              </Field>
-              <Field label="Specialist Commitment" required>
-                <textarea value={form.att_agent_commit} onChange={(e) => set("att_agent_commit", e.target.value)} placeholder="Commitment..." style={ta} />
-              </Field>
-              <Field label="Team Lead Commitment" required>
-                <textarea value={form.att_tl_commit} onChange={(e) => set("att_tl_commit", e.target.value)} placeholder="Commitment..." style={ta} />
+              <Field label="Coaching Reason" required>
+                <RadioGroup T={T} options={["General coaching", "Productivity", "Attendance", "Attrition risk"]} value={form.coachingReason} onChange={(v) => set("coachingReason", v)} colors={REASON_COLORS} />
               </Field>
             </>
           )}
 
-          {step === 2 && form.type === "Attrition Risk" && (
+          {/* ── Step 2: General coaching ── */}
+          {step === 2 && form.coachingReason === "General coaching" && (
             <>
-              <Field label="How is the specialist's overall mood?" required>
-                <RadioGroup options={["Excited!", "Happy!", "Neutral", "Focused"]} value={form.mood} onChange={(v) => set("mood", v)} />
+              <Field label="How is the agent's mood in general?" required>
+                <RadioGroup T={T} options={MOOD_OPTIONS_GENERAL} value={form.mood} onChange={v => set("mood", v)} />
               </Field>
-              <Field label="Red flag noticed" required>
-                <RadioGroup
-                  options={["Absenteeism", "Lateness", "Low performance", "Attitude", "Salary not enough", "Health issues", "Other"]}
-                  value={form.red_flag}
-                  onChange={(v) => set("red_flag", v)}
-                />
+              <Field label="Overall KPI Performance" required>
+                <RadioGroup T={T} options={["Exceeds", "Meets", "Needs Improvement", "Below"]} value={form.kpiPerformance} onChange={v => set("kpiPerformance", v)} colors={{ Exceeds: "#10b981", Meets: "#14b8a6", "Needs Improvement": "#f59e0b", Below: "#ef4444" }} />
               </Field>
-              {form.red_flag === "Other" && (
-                <Field label="If other, what is the reason?" required>
-                  <input value={form.other_reason} onChange={(e) => set("other_reason", e.target.value)} placeholder="Specify..." style={inp} />
+              <Field label="Main KPIs Discussed" required>
+                <RadioGroup T={T} options={["Productivity", "Quality", "Attendance", "Timeliness", "Other"]} value={form.kpisDiscussed} onChange={v => set("kpisDiscussed", v)} />
+              </Field>
+              <Field label="Is there a risk flag on the KPI section?">
+                <RadioGroup T={T} options={["Yes", "No"]} value={form.kpiRiskFlag} onChange={v => set("kpiRiskFlag", v)} colors={{ Yes: "#ef4444", No: "#10b981" }} />
+              </Field>
+              {form.kpiRiskFlag === "Yes" && (
+                <Field label="KPI Risk — Detail">
+                  <textarea value={form.kpiRiskDetail} onChange={e => set("kpiRiskDetail", e.target.value)} placeholder="Describe the risk..." style={taT} />
                 </Field>
               )}
-              <Field label="What actions will the company take to resolve the root cause?" required>
-                <textarea value={form.company_actions} onChange={(e) => set("company_actions", e.target.value)} placeholder="Actions..." style={ta} />
+              <Field label="Productivity / Quality Notes">
+                <textarea value={form.prodQualityNotes} onChange={e => set("prodQualityNotes", e.target.value)} placeholder="Any notes on productivity or quality..." style={taT} />
               </Field>
-              <Field label="Specialist Commitment">
-                <textarea value={form.att_risk_commit} onChange={(e) => set("att_risk_commit", e.target.value)} placeholder="Commitment..." style={ta} />
+              <Field label="Is there a risk flag on Productivity / Quality?">
+                <RadioGroup T={T} options={["Yes", "No"]} value={form.prodRiskFlag} onChange={v => set("prodRiskFlag", v)} colors={{ Yes: "#ef4444", No: "#10b981" }} />
               </Field>
+              {form.prodRiskFlag === "Yes" && (
+                <Field label="Productivity / Quality Risk — Detail">
+                  <textarea value={form.prodRiskDetail} onChange={e => set("prodRiskDetail", e.target.value)} placeholder="Describe the risk..." style={taT} />
+                </Field>
+              )}
+              <Field label="Attendance Notes">
+                <textarea value={form.genAttNotes} onChange={e => set("genAttNotes", e.target.value)} placeholder="Any notes on attendance..." style={taT} />
+              </Field>
+              <Field label="Is there a risk flag on Attendance?">
+                <RadioGroup T={T} options={["Yes", "No"]} value={form.genAttRiskFlag} onChange={v => set("genAttRiskFlag", v)} colors={{ Yes: "#ef4444", No: "#10b981" }} />
+              </Field>
+              {form.genAttRiskFlag === "Yes" && (
+                <Field label="Attendance Risk — Detail">
+                  <textarea value={form.genAttRiskDetail} onChange={e => set("genAttRiskDetail", e.target.value)} placeholder="Describe the risk..." style={taT} />
+                </Field>
+              )}
+              <WarningDeliveredSection form={form} set={set} T={T} />
             </>
           )}
 
+          {/* ── Step 2: Productivity ── */}
+          {step === 2 && form.coachingReason === "Productivity" && (
+            <>
+              <Field label="How is the agent's mood in general?" required>
+                <RadioGroup T={T} options={MOOD_OPTIONS} value={form.mood} onChange={v => set("mood", v)} />
+              </Field>
+              <Field label="What is their current productivity?" required>
+                <select value={form.currentProductivity} onChange={e => set("currentProductivity", e.target.value)} style={inpT}>
+                  <option value="">Choose...</option>
+                  {["0-20 cases a day", "20 to 30 cases a day", "30 to 40", "40 to 50", "50 to 60", "Above 60"].map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </Field>
+              <Field label="How about the Productivity Quality?" required>
+                <select value={form.productivityQuality} onChange={e => set("productivityQuality", e.target.value)} style={inpT}>
+                  <option value="">Choose...</option>
+                  {["Good productivity quality", "Bad PQ: Copy and paste", "Bad PQ: No calls received", "Bad PQ: No notes at the shift starting time", "Bad PQ: No notes before end of shift", "Other (Not following procedures)"].map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </Field>
+              <Field label="Root cause for this behaviour?" required>
+                <RadioGroup T={T} options={["Attitude", "Knowledge", "Skill", "Unclear client processes"]} value={form.rootCause} onChange={v => set("rootCause", v)} />
+              </Field>
+              <Field label="Any other comment about Productivity or PQ?">
+                <textarea value={form.prodComment} onChange={e => set("prodComment", e.target.value)} placeholder="Optional comment..." style={taT} />
+              </Field>
+              <Field label="What is the agent's commitment for the next review?" required>
+                <textarea value={form.agentCommit} onChange={e => set("agentCommit", e.target.value)} placeholder="Agent's commitment..." style={taT} />
+              </Field>
+              <Field label="What is the Team Leader's commitment for the next review?" required>
+                <textarea value={form.tlCommit} onChange={e => set("tlCommit", e.target.value)} placeholder="TL commitment..." style={taT} />
+              </Field>
+              <WarningDeliveredSection form={form} set={set} T={T} />
+            </>
+          )}
+
+          {/* ── Step 2: Attendance ── */}
+          {step === 2 && form.coachingReason === "Attendance" && (
+            <>
+              <Field label="How is the agent's mood in general?" required>
+                <RadioGroup T={T} options={MOOD_OPTIONS} value={form.mood} onChange={v => set("mood", v)} />
+              </Field>
+              <Field label="What is the attendance problem we are facing?" required>
+                <RadioGroup T={T} options={["Absenteeism", "Tardiness", "Unjustified disconnection throughout the day", "Other"]} value={form.attendanceProblem} onChange={v => set("attendanceProblem", v)} />
+              </Field>
+              <Field label="What is the root cause for this behavior?" required>
+                <textarea value={form.attRootCause} onChange={e => set("attRootCause", e.target.value)} placeholder="Root cause..." style={taT} />
+              </Field>
+              <Field label="What is the agent's commitment?" required>
+                <textarea value={form.agentCommit} onChange={e => set("agentCommit", e.target.value)} placeholder="Agent's commitment..." style={taT} />
+              </Field>
+              <Field label="What is the Team Lead commitment?" required>
+                <textarea value={form.tlCommit} onChange={e => set("tlCommit", e.target.value)} placeholder="TL commitment..." style={taT} />
+              </Field>
+              <WarningDeliveredSection form={form} set={set} T={T} />
+            </>
+          )}
+
+          {/* ── Step 2: Attrition risk ── */}
+          {step === 2 && form.coachingReason === "Attrition risk" && (
+            <>
+              <Field label="How is the agent's mood in general?" required>
+                <RadioGroup T={T} options={MOOD_OPTIONS} value={form.mood} onChange={v => set("mood", v)} />
+              </Field>
+              <Field label="What is the red flag we noticed?" required>
+                <RadioGroup T={T} options={["Absenteeism", "Lateness", "Low performance", "Attitude", "Salary not enough", "Health issues", "Other"]} value={form.redFlag} onChange={v => set("redFlag", v)} />
+              </Field>
+              {form.redFlag === "Other" && (
+                <Field label="If other, what is the reason?" required>
+                  <input value={form.otherReason} onChange={e => set("otherReason", e.target.value)} placeholder="Specify reason..." style={inpT} />
+                </Field>
+              )}
+              <Field label="What actions are we going to take as a company to help resolve the root cause?" required>
+                <textarea value={form.companyActions} onChange={e => set("companyActions", e.target.value)} placeholder="Company actions..." style={taT} />
+              </Field>
+              <Field label="Agent's commitment to avoid it happening again?">
+                <textarea value={form.agentCommit} onChange={e => set("agentCommit", e.target.value)} placeholder="Agent's commitment..." style={taT} />
+              </Field>
+              <WarningDeliveredSection form={form} set={set} T={T} />
+            </>
+          )}
+
+          {/* ── Step 3: Close Out ── */}
           {step === 3 && (
             <>
               <Field label="EWS Status" required>
-                <RadioGroup options={EWS_OPTIONS} value={form.ews} onChange={(v) => set("ews", v)} colors={{ Green: "#10b981", Yellow: "#f59e0b", Red: "#ef4444", Imminent: "#7c3aed" }} />
+                <RadioGroup T={T} options={EWS_OPTIONS} value={form.ews} onChange={v => set("ews", v)} colors={{ Green: "#10b981", Yellow: "#f59e0b", Red: "#ef4444", Imminent: "#7c3aed" }} />
               </Field>
-              <Field label="Additional Notes / Summary">
-                <textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Any additional notes..." style={{ ...ta, minHeight: 100 }} />
+              <Field label="Free text space for any other comment or summary.">
+                <textarea value={form.notes} onChange={e => set("notes", e.target.value)} placeholder="Any additional notes..." style={{ ...taT, minHeight: 100 }} />
               </Field>
-
-              <div style={{ background: "#0d0f18", borderRadius: 10, padding: 14 }}>
-                <div style={{ fontSize: 10, color: "#64748b", fontWeight: 700, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                  Summary
-                </div>
+              <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 10, padding: 14 }}>
+                <div style={{ fontSize: 10, color: T.muted, fontWeight: 700, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>Summary</div>
                 {[
                   ["Specialist", form.agentName],
                   ["Department", form.dept],
                   ["Date", form.date],
-                  ["Type", form.type],
+                  ["Coaching Reason", form.coachingReason],
+                  ["Mood", form.mood],
+                  ["Warning Delivered", form.warningDelivered],
+                  ["Warning Type", form.warningDelivered === "Yes" ? form.warningType : null],
                   ["EWS", form.ews],
-                ].map(([k, v]) =>
-                  v ? (
-                    <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 5 }}>
-                      <span style={{ color: "#64748b" }}>{k}</span>
-                      <span style={{ color: "#e2e8f0", fontWeight: 500 }}>{v}</span>
-                    </div>
-                  ) : null
-                )}
+                ].map(([k, v]) => v ? (
+                  <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 5 }}>
+                    <span style={{ color: T.muted }}>{k}</span>
+                    <span style={{ color: T.text, fontWeight: 500 }}>{v}</span>
+                  </div>
+                ) : null)}
               </div>
             </>
           )}
         </div>
 
+        {/* Footer */}
         <div style={{ padding: "14px 26px", borderTop: `1px solid ${T.border}`, display: "flex", gap: 8, flexShrink: 0 }}>
           <button type="button" onClick={onClose} style={{ padding: "9px 18px", borderRadius: 8, border: `1px solid ${T.border}`, background: "transparent", color: T.muted, fontSize: 12, cursor: "pointer" }}>
             Cancel
           </button>
-
           {step > 1 && (
-            <button type="button" onClick={() => setStep((s) => s - 1)} style={{ padding: "9px 18px", borderRadius: 8, border: "1px solid #1e2130", background: "transparent", color: "#94a3b8", fontSize: 12, cursor: "pointer" }}>
+            <button type="button" onClick={() => setStep(s => s - 1)} style={{ padding: "9px 18px", borderRadius: 8, border: "1px solid #1e2130", background: "transparent", color: "#94a3b8", fontSize: 12, cursor: "pointer" }}>
               ← Back
             </button>
           )}
-
           <div style={{ flex: 1 }} />
-
           {step < 3 ? (
-            <button
-              type="button"
-              onClick={() => setStep((s) => s + 1)}
-              disabled={!canNext}
-              style={{
-                padding: "9px 22px",
-                borderRadius: 8,
-                border: "none",
-                background: canNext ? "linear-gradient(135deg,#14b8a6,#0d9488)" : "#1e2130",
-                color: canNext ? "#fff" : "#64748b",
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: canNext ? "pointer" : "not-allowed",
-              }}
-            >
+            <button type="button" onClick={() => setStep(s => s + 1)} disabled={!canNext}
+              style={{ padding: "9px 22px", borderRadius: 8, border: "none", background: canNext ? "linear-gradient(135deg,#14b8a6,#0d9488)" : "#1e2130", color: canNext ? "#fff" : "#64748b", fontSize: 12, fontWeight: 600, cursor: canNext ? "pointer" : "not-allowed" }}>
               Next →
             </button>
           ) : (
-            <button
-              type="button"
-              onClick={() => {
-                onSave(form);
-                onClose();
-              }}
-              disabled={!form.ews}
-              style={{
-                padding: "9px 22px",
-                borderRadius: 8,
-                border: "none",
-                background: form.ews ? "linear-gradient(135deg,#14b8a6,#0d9488)" : "#1e2130",
-                color: form.ews ? "#fff" : "#64748b",
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: form.ews ? "pointer" : "not-allowed",
-              }}
-            >
+            <button type="button" onClick={() => { onSave(form); onClose(); }} disabled={!form.ews}
+              style={{ padding: "9px 22px", borderRadius: 8, border: "none", background: form.ews ? "linear-gradient(135deg,#14b8a6,#0d9488)" : "#1e2130", color: form.ews ? "#fff" : "#64748b", fontSize: 12, fontWeight: 600, cursor: form.ews ? "pointer" : "not-allowed" }}>
               Save Coaching ✓
             </button>
           )}
@@ -1412,6 +1496,7 @@ function DashboardView({ coachings, warnings, role, T, onOpenCoaching, targets, 
   const now   = new Date();
   const [filterMonth, setFilterMonth] = useState("");
   const [filterYear, setFilterYear] = useState("");
+  const [drilldownModal, setDrilldownModal] = useState(null); // shared drilldown for specialist + TL
   
   const thisMonth = String(now.getMonth()+1).padStart(2,"0");
   const thisYear  = String(now.getFullYear());
@@ -1465,18 +1550,21 @@ function DashboardView({ coachings, warnings, role, T, onOpenCoaching, targets, 
   // Top 3
   const agentRanking={};
   coachings.forEach(c=>{
-    if(!agentRanking[c.agentName]) agentRanking[c.agentName]={ack:0,rating:[]};
+    if(!agentRanking[c.agentName]) agentRanking[c.agentName]={pending:0,ack:0,rating:[]};
+    if(c.status==="Pending"||c.status==="Delivered") agentRanking[c.agentName].pending++;
     if(c.status==="Acknowledged") agentRanking[c.agentName].ack++;
     if(c.agentRating) agentRanking[c.agentName].rating.push(c.agentRating);
   });
   const top3=Object.entries(agentRanking)
-    .map(([name,d])=>({name,score:d.ack,avg:d.rating.length?( d.rating.reduce((a,b)=>a+b,0)/d.rating.length).toFixed(1):"—"}))
-    .sort((a,b)=>b.score-a.score).slice(0,3);
+    .map(([name,d])=>({name,pending:d.pending,ack:d.ack,avg:d.rating.length?(d.rating.reduce((a,b)=>a+b,0)/d.rating.length).toFixed(1):"—"}))
+    .sort((a,b)=>b.pending-a.pending).slice(0,3);
 
-  // Overdue
-  const lastByAgent={};
-  coachings.forEach(c=>{if(!lastByAgent[c.agentName]||c.date>lastByAgent[c.agentName]) lastByAgent[c.agentName]=c.date;});
-  const overdue=Object.entries(lastByAgent)
+  // Overdue — only agents with at least one non-acknowledged coaching
+  const lastNonAckedByAgent={};
+  coachings.filter(c=>c.status!=="Acknowledged").forEach(c=>{
+    if(!lastNonAckedByAgent[c.agentName]||c.date>lastNonAckedByAgent[c.agentName]) lastNonAckedByAgent[c.agentName]=c.date;
+  });
+  const overdue=Object.entries(lastNonAckedByAgent)
     .map(([name,date])=>({name,date,days:Math.floor((now-new Date(date))/86400000)}))
     .sort((a,b)=>b.days-a.days).slice(0,3);
 
@@ -1500,6 +1588,10 @@ function DashboardView({ coachings, warnings, role, T, onOpenCoaching, targets, 
 
     return (
       <div style={{ padding:"20px 26px" }}>
+        {/* Specialist drilldown */}
+        {drilldownModal && (
+          <DrilldownModal title={drilldownModal.title} coachings={drilldownModal.coachings} T={T} onClose={()=>setDrilldownModal(null)} onOpenCoaching={c=>{onOpenCoaching(c);setDrilldownModal(null);}} />
+        )}
         {/* Filter Row */}
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:8, marginBottom:20 }}>
           <h2 style={{ fontSize:14, fontWeight:700, color:T.text, margin:0 }}>My Coaching Dashboard</h2>
@@ -1518,21 +1610,19 @@ function DashboardView({ coachings, warnings, role, T, onOpenCoaching, targets, 
         {/* KPI Cards */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:20 }}>
           {[
-            { label:"My Coachings", val:filteredCoachings.length, icon:"📋", color:T.accent },
-            { label:"Pending Review", val:filteredCoachings.filter(c=>c.status==="Delivered").length, icon:"⏳", color:"#f59e0b" },
-            { label:"Warnings", val:filteredWarnings.length, icon:"🚨", color:unreadWarnings > 0 ? "#ef4444" : T.muted, badge: unreadWarnings },
+            { label:"My Coachings", val:filteredCoachings.length, icon:"📋", color:T.accent, list:filteredCoachings, title:"All My Coachings" },
+            { label:"Pending Review", val:filteredCoachings.filter(c=>c.status==="Delivered").length, icon:"⏳", color:"#f59e0b", list:filteredCoachings.filter(c=>c.status==="Delivered"), title:"Pending Review" },
+            { label:"Acknowledged", val:filteredCoachings.filter(c=>c.status==="Acknowledged").length, icon:"✅", color:"#10b981", list:filteredCoachings.filter(c=>c.status==="Acknowledged"), title:"Acknowledged" },
           ].map((s,i)=>(
-            <div key={i} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:12, padding:"16px 18px", position:"relative" }}>
-              {s.badge && s.badge > 0 && (
-                <div style={{ position:"absolute", top:8, right:8, background:"#ef4444", color:"#fff", borderRadius:"50%", width:24, height:24, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700 }}>
-                  {s.badge}
-                </div>
-              )}
+            <div key={i} onClick={()=>setDrilldownModal({title:s.title,coachings:s.list})}
+              style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:12, padding:"16px 18px", cursor:"pointer" }}
+              onMouseEnter={e=>e.currentTarget.style.borderColor=s.color+"60"}
+              onMouseLeave={e=>e.currentTarget.style.borderColor=T.border}>
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                 <div style={{ fontSize:10, fontWeight:700, color:T.muted, textTransform:"uppercase", letterSpacing:"0.05em" }}>{s.label}</div>
                 <span style={{ fontSize:18 }}>{s.icon}</span>
               </div>
-              <div style={{ fontSize:30, fontWeight:800, color:T.text }}>{s.val}</div>
+              <div style={{ fontSize:30, fontWeight:800, color:s.color }}>{s.val}</div>
             </div>
           ))}
         </div>
@@ -1587,8 +1677,8 @@ function DashboardView({ coachings, warnings, role, T, onOpenCoaching, targets, 
     );
   }
 
-  const [drilldown, setDrilldown] = useState(null);
-  // drilldown: { title, coachings?, warnings? }
+  const drilldown = drilldownModal;
+  const setDrilldown = setDrilldownModal;
 
   // For Team Lead (original dashboard)
   return (
@@ -1756,7 +1846,7 @@ function DashboardView({ coachings, warnings, role, T, onOpenCoaching, targets, 
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
         {/* Top 3 */}
         <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:12, padding:18 }}>
-          <div style={{ fontSize:12, fontWeight:700, color:T.text, marginBottom:14 }}>🏆 Top Agents — Acknowledged</div>
+          <div style={{ fontSize:12, fontWeight:700, color:T.text, marginBottom:14 }}>🏆 Top Agents — Pending</div>
           {top3.length===0
             ? <div style={{ fontSize:12, color:T.muted, textAlign:"center", padding:"20px 0" }}>No data yet.</div>
             : top3.map((a,i)=>(
@@ -1764,9 +1854,9 @@ function DashboardView({ coachings, warnings, role, T, onOpenCoaching, targets, 
                 <div style={{ fontSize:22, width:32 }}>{medals[i]}</div>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:13, fontWeight:600, color:T.text }}>{a.name}</div>
-                  <div style={{ fontSize:11, color:T.muted }}>{a.score} acknowledged · ⭐ {a.avg}</div>
+                  <div style={{ fontSize:11, color:T.muted }}>{a.pending} pending · {a.ack} acknowledged · ⭐ {a.avg}</div>
                 </div>
-                <div style={{ fontSize:20, fontWeight:800, color:T.accent }}>{a.score}</div>
+                <div style={{ fontSize:20, fontWeight:800, color:"#f59e0b" }}>{a.pending}</div>
               </div>
             ))}
         </div>
@@ -2246,11 +2336,11 @@ function ManagerView({ coachings, warnings, T, onOpenCoaching, targets, onSetTar
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:14 }}>
             {ewsData.map((e,i)=>(
-              <div key={i} onClick={()=>e.val>0&&setDrilldown({title:`EWS: ${e.label} Coachings`, coachings:e.coachings})}
-                style={{ background:e.bg, borderRadius:10, padding:"12px 14px", cursor:e.val>0?"pointer":"default", transition:"opacity 0.15s" }}
-                onMouseEnter={el=>e.val>0&&(el.currentTarget.style.opacity="0.8")}
+              <div key={i} onClick={()=>setDrilldown({title:`EWS: ${e.label} Coachings`, coachings:e.coachings})}
+                style={{ background:e.bg, borderRadius:10, padding:"12px 14px", cursor:"pointer", transition:"opacity 0.15s" }}
+                onMouseEnter={el=>el.currentTarget.style.opacity="0.8"}
                 onMouseLeave={el=>el.currentTarget.style.opacity="1"}>
-                <div style={{ fontSize:24, fontWeight:800, color:e.color, textDecoration:e.val>0?"underline":"none" }}>{e.val}</div>
+                <div style={{ fontSize:24, fontWeight:800, color:e.color }}>{e.val}</div>
                 <div style={{ fontSize:11, color:e.color, fontWeight:600 }}>{e.label}</div>
               </div>
             ))}
@@ -2486,6 +2576,21 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
 
   const saveCoaching = async (form) => {
     try {
+      const warningFields = { warningDelivered: form.warningDelivered, warningType: form.warningDelivered === "Yes" ? form.warningType : "" };
+      const buildExtraData = () => {
+        switch (form.coachingReason) {
+          case "General coaching":
+            return { kpiPerformance: form.kpiPerformance, kpisDiscussed: form.kpisDiscussed, kpiRiskFlag: form.kpiRiskFlag, kpiRiskDetail: form.kpiRiskDetail, prodQualityNotes: form.prodQualityNotes, prodRiskFlag: form.prodRiskFlag, prodRiskDetail: form.prodRiskDetail, genAttNotes: form.genAttNotes, genAttRiskFlag: form.genAttRiskFlag, genAttRiskDetail: form.genAttRiskDetail, ...warningFields };
+          case "Productivity":
+            return { currentProductivity: form.currentProductivity, productivityQuality: form.productivityQuality, rootCause: form.rootCause, prodComment: form.prodComment, agentCommit: form.agentCommit, tlCommit: form.tlCommit, ...warningFields };
+          case "Attendance":
+            return { attendanceProblem: form.attendanceProblem, attRootCause: form.attRootCause, agentCommit: form.agentCommit, tlCommit: form.tlCommit, ...warningFields };
+          case "Attrition risk":
+            return { redFlag: form.redFlag, otherReason: form.otherReason, companyActions: form.companyActions, agentCommit: form.agentCommit, ...warningFields };
+          default: return {};
+        }
+      };
+
       const newCoaching = {
         id: crypto.randomUUID(),
         created_at: new Date().toISOString(),
@@ -2495,26 +2600,11 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
         agent_name: form.agentName,
         dept: form.dept,
         date: form.date,
-        type: form.type,
-        reason: form.reason,
-        observations: form.observations,
-        expected_behavior: form.expectedBehavior,
-        action_plan: form.actionPlan,
-        follow_up_date: form.followUpDate,
-        supervisor_notes: form.supervisorNotes,
-        incidence_type: form.incidence_type,
-        incidence_count: form.incidence_count,
-        pattern: form.pattern,
-        agent_reason: form.agent_reason,
-        att_agent_commit: form.att_agent_commit,
-        att_tl_commit: form.att_tl_commit,
+        type: form.coachingReason,
         mood: form.mood,
-        red_flag: form.red_flag,
-        other_reason: form.other_reason,
-        company_actions: form.company_actions,
-        att_risk_commit: form.att_risk_commit,
         ews: form.ews,
         notes: form.notes,
+        extra_data: buildExtraData(),
       };
       
       const { data, error } = await supabase
@@ -2688,8 +2778,6 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
     { id:"dashboard", icon:"⊞", label:"Dashboard" },
     ...(isTL||isManager   ? [{ id:"coachings", icon:"📋", label:"Coachings" }] : []),
     ...(isSpecialist       ? [{ id:"coachings", icon:"📋", label:"My Coachings" }] : []),
-    ...(isTL               ? [{ id:"warnings",  icon:"🚨", label:"Disciplinary" }] : []),
-    ...(isHR               ? [{ id:"warnings",  icon:"🚨", label:"Warnings" }] : []),
     ...(isManager          ? [{ id:"triads",    icon:"🤝", label:"Manager Triad" }] : []),
     ...(isTL               ? [{ id:"triads",    icon:"🤝", label:"My Triads" }] : []),
   ];
@@ -2705,39 +2793,26 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
         </div>
 
         <nav style={{ flex:1, padding:"12px 10px" }}>
-          {navItems.map(item=>{
-            const unreadWarningsCount = (item.id === "warnings" || item.id === "hr") ? visibleWarnings.filter(w => !w.acknowledgedAt).length : 0;
-            return (
-              <button key={item.id} type="button" onClick={()=>setActiveTab(item.id)}
-                style={{ width:"100%", display:"flex", alignItems:"center", gap:9, padding:"8px 11px", borderRadius:8, border:"none", cursor:"pointer", marginBottom:2,
-                  background:activeTab===item.id?T.accent+"18":"transparent",
-                  color:activeTab===item.id?T.accent:T.muted,
-                  fontWeight:activeTab===item.id?700:500, fontSize:13, textAlign:"left", fontFamily:"inherit", position:"relative" }}>
-                <span>{item.icon}</span>{item.label}
-                {unreadWarningsCount > 0 && (
-                  <div style={{ position:"absolute", right:8, background:"#ef4444", color:"#fff", borderRadius:"50%", width:20, height:20, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700 }}>
-                    {unreadWarningsCount}
-                  </div>
-                )}
-              </button>
-            );
-          })}
-          {isTL && (
+          {navItems.map(item=>(
+            <button key={item.id} type="button" onClick={()=>setActiveTab(item.id)}
+              style={{ width:"100%", display:"flex", alignItems:"center", gap:9, padding:"8px 11px", borderRadius:8, border:"none", cursor:"pointer", marginBottom:2,
+                background:activeTab===item.id?T.accent+"18":"transparent",
+                color:activeTab===item.id?T.accent:T.muted,
+                fontWeight:activeTab===item.id?700:500, fontSize:13, textAlign:"left", fontFamily:"inherit" }}>
+              <span>{item.icon}</span>{item.label}
+            </button>
+          ))}
+          {(isTL || isManager) && (
             <div style={{ marginTop:10, display:"flex", flexDirection:"column", gap:5 }}>
               <button type="button" onClick={()=>setShowCoachingModal(true)}
                 style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"8px 11px", borderRadius:8, border:`1px solid ${T.accent}40`, background:T.accent+"12", color:T.accent, fontWeight:600, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
                 <span>+</span> New Coaching
                 {coachingDraft && <span style={{ marginLeft:"auto", fontSize:9, background:T.accent, color:"#fff", borderRadius:99, padding:"1px 6px" }}>draft</span>}
               </button>
-              <button type="button" onClick={()=>setShowWarningModal(true)}
-                style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"8px 11px", borderRadius:8, border:"1px solid #ef444440", background:"#ef444412", color:"#ef4444", fontWeight:600, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
-                <span>+</span> New Warning
-                {warningDraft && <span style={{ marginLeft:"auto", fontSize:9, background:"#ef4444", color:"#fff", borderRadius:99, padding:"1px 6px" }}>draft</span>}
-              </button>
             </div>
           )}
           {isManager && (
-            <div style={{ marginTop:10 }}>
+            <div style={{ marginTop:5 }}>
               <button type="button" onClick={()=>{ setActiveTab("triads"); setShowTriadModal(true); }}
                 style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"8px 11px", borderRadius:8, border:`1px solid #14b8a640`, background:"#14b8a612", color:"#14b8a6", fontWeight:600, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
                 <span>+</span> New Triad
@@ -2812,9 +2887,6 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
             )}
             {activeTab==="coachings" && (
               <CoachingsListView coachings={visibleCoachings} isSpecialist={isSpecialist} T={T} onOpenCoaching={setSelectedCoaching} onDeliver={deliverCoaching} onDeleteCoaching={!isSpecialist ? deleteCoaching : null} />
-            )}
-            {activeTab==="warnings" && (
-              <HRView warnings={visibleWarnings} onNewWarning={()=>setShowWarningModal(true)} T={T} onDeleteWarning={isTL ? deleteWarning : null} isTeamLead={isTL} />
             )}
             {activeTab==="triads" && isManager && !showTriadModal && (
               <TLTriadView triads={triads} T={T} onOpenTriad={setSelectedTriad} />
