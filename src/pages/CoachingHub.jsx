@@ -2070,41 +2070,6 @@ function ManagerView({ coachings, warnings, T, onOpenCoaching, targets, onSetTar
         </div>
       </div>
 
-      {/* Recent coachings */}
-      <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:12, overflow:"hidden" }}>
-        <div style={{ padding:"14px 18px", borderBottom:`1px solid ${T.border}`, fontSize:12, fontWeight:700, color:T.text }}>
-          All Coachings this period
-          <button onClick={()=>setDrilldown({title:"All Coachings", coachings:filteredAll})} style={{ marginLeft:10, fontSize:11, color:T.accent, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit" }}>View all →</button>
-        </div>
-        <table style={{ width:"100%", borderCollapse:"collapse" }}>
-          <thead>
-            <tr style={{ borderBottom:`1px solid ${T.border}` }}>
-              {["Specialist","TL","Type","EWS","Status"].map(h=>(
-                <th key={h} style={{ padding:"8px 14px", textAlign:"left", fontSize:10, fontWeight:700, color:T.muted, textTransform:"uppercase", letterSpacing:"0.05em" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filteredAll.slice(0,8).map((c,i,arr)=>{
-              const ss=STATUS_STYLE[c.status]||{};
-              const ews=EWS_STYLE[c.ews]||{};
-              const tc=TYPE_COLOR[c.type]||"#64748b";
-              return (
-                <tr key={c.id} style={{ borderBottom:i<arr.length-1?`1px solid ${T.border}`:"none", cursor:"pointer" }}
-                  onClick={()=>onOpenCoaching(c)}
-                  onMouseEnter={e=>e.currentTarget.style.background=T.hover}
-                  onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                  <td style={{ padding:"10px 14px", fontSize:12, color:T.text, fontWeight:500 }}>{c.agentName}</td>
-                  <td style={{ padding:"10px 14px", fontSize:11, color:T.muted }}>{c.tlName||"—"}</td>
-                  <td style={{ padding:"10px 14px" }}><span style={{ fontSize:10, fontWeight:700, color:tc, background:tc+"18", padding:"3px 8px", borderRadius:99 }}>{c.type}</span></td>
-                  <td style={{ padding:"10px 14px" }}>{c.ews&&<span style={{ fontSize:10, fontWeight:700, color:ews.text, background:ews.bg, padding:"3px 8px", borderRadius:99 }}>{c.ews}</span>}</td>
-                  <td style={{ padding:"10px 14px" }}><span style={{ fontSize:10, color:ss.text, background:ss.bg, padding:"3px 8px", borderRadius:99 }}>{c.status}</span></td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
 
       {/* Drilldown modal — coachings */}
       {drilldown && (
