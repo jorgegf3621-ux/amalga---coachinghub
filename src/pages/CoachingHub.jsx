@@ -1075,8 +1075,8 @@ function DrilldownModal({ title, coachings, T, onClose, onOpenCoaching }) {
   const sel = { padding:"5px 9px", borderRadius:7, border:`1px solid ${T.border}`, background:T.inputBg, color:T.text, fontSize:11, outline:"none", fontFamily:"inherit", cursor:"pointer" };
 
   return (
-    <div style={{ position:"fixed", inset:0, background:"#00000099", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
-      <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:18, width:"100%", maxWidth:720, maxHeight:"88vh", display:"flex", flexDirection:"column", boxShadow:"0 32px 80px #00000070" }}>
+    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"#00000099", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:18, width:"100%", maxWidth:720, maxHeight:"88vh", display:"flex", flexDirection:"column", boxShadow:"0 32px 80px #00000070" }}>
         {/* Header */}
         <div style={{ padding:"18px 22px 14px", borderBottom:`1px solid ${T.border}`, display:"flex", justifyContent:"space-between", alignItems:"center", flexShrink:0 }}>
           <div style={{ fontSize:15, fontWeight:700, color:T.text }}>{title}</div>
@@ -1373,8 +1373,8 @@ function DashboardView({ coachings, warnings, role, T, onOpenCoaching, targets, 
         />
       )}
       {drilldown && drilldown.warnings && (
-        <div style={{ position:"fixed", inset:0, background:"#00000099", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
-          <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:18, width:"100%", maxWidth:620, maxHeight:"85vh", display:"flex", flexDirection:"column", boxShadow:"0 32px 80px #00000070" }}>
+        <div onClick={()=>setDrilldown(null)} style={{ position:"fixed", inset:0, background:"#00000099", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:18, width:"100%", maxWidth:620, maxHeight:"85vh", display:"flex", flexDirection:"column", boxShadow:"0 32px 80px #00000070" }}>
             <div style={{ padding:"18px 22px 14px", borderBottom:`1px solid ${T.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
               <div style={{ fontSize:15, fontWeight:700, color:T.text }}>{drilldown.title}</div>
               <button onClick={() => setDrilldown(null)} style={{ background:"none", border:"none", color:T.muted, cursor:"pointer", fontSize:20 }}>×</button>
@@ -1672,6 +1672,7 @@ function CoachingsListView({ coachings, isSpecialist, T, onOpenCoaching, onDeliv
 function HRView({ warnings, onNewWarning, T, onDeleteWarning = null, isTeamLead = false }) {
   const [filterType, setFilterType] = useState("All");
   const [search,     setSearch]     = useState("");
+  const [drilldown,  setDrilldown]  = useState(null); // { title, warnings }
   const allAgents=[...new Set(warnings.map(w=>w.agentName))];
   const filtered=warnings
     .filter(w=>filterType==="All"||w.warningType===filterType)
@@ -1679,14 +1680,61 @@ function HRView({ warnings, onNewWarning, T, onDeleteWarning = null, isTeamLead 
 
   return (
     <div style={{ padding:"20px 26px" }}>
+      {/* Warnings drilldown modal */}
+      {drilldown && (
+        <div onClick={()=>setDrilldown(null)} style={{ position:"fixed", inset:0, background:"#00000099", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:18, width:"100%", maxWidth:660, maxHeight:"85vh", display:"flex", flexDirection:"column", boxShadow:"0 32px 80px #00000070" }}>
+            <div style={{ padding:"18px 22px 14px", borderBottom:`1px solid ${T.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <div style={{ fontSize:15, fontWeight:700, color:T.text }}>{drilldown.title}</div>
+              <button onClick={()=>setDrilldown(null)} style={{ background:"none", border:"none", color:T.muted, cursor:"pointer", fontSize:20 }}>×</button>
+            </div>
+            <div style={{ overflowY:"auto", flex:1 }}>
+              <table style={{ width:"100%", borderCollapse:"collapse" }}>
+                <thead style={{ position:"sticky", top:0, background:T.card }}>
+                  <tr style={{ borderBottom:`1px solid ${T.border}` }}>
+                    {["Specialist","Dept","Type","Date","Status"].map(h=>(
+                      <th key={h} style={{ padding:"9px 14px", textAlign:"left", fontSize:10, fontWeight:700, color:T.muted, textTransform:"uppercase", letterSpacing:"0.05em" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {drilldown.warnings.length===0
+                    ? <tr><td colSpan={5} style={{ textAlign:"center", padding:36, color:T.muted, fontSize:13 }}>No warnings.</td></tr>
+                    : drilldown.warnings.map((w,i)=>{
+                      const ws=WARNING_STYLE[w.warningType]||{};
+                      return (
+                        <tr key={w.id} style={{ borderBottom:i<drilldown.warnings.length-1?`1px solid ${T.border}`:"none" }}
+                          onMouseEnter={e=>e.currentTarget.style.background=T.hover}
+                          onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                          <td style={{ padding:"11px 14px", fontSize:12, color:T.text, fontWeight:500 }}>{w.agentName}</td>
+                          <td style={{ padding:"11px 14px", fontSize:11, color:T.muted }}>{w.dept}</td>
+                          <td style={{ padding:"11px 14px" }}><span style={{ fontSize:10, fontWeight:700, color:ws.color, background:ws.bg, padding:"3px 8px", borderRadius:99 }}>{ws.icon} {w.warningType}</span></td>
+                          <td style={{ padding:"11px 14px", fontSize:11, color:T.muted }}>{w.date}</td>
+                          <td style={{ padding:"11px 14px", fontSize:11, fontWeight:600, color:w.acknowledgedAt?"#10b981":"#f59e0b" }}>{w.acknowledgedAt?"✓ Acknowledged":"Pending"}</td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ padding:"12px 22px", borderTop:`1px solid ${T.border}`, fontSize:11, color:T.muted }}>
+              {drilldown.warnings.length} warning{drilldown.warnings.length!==1?"s":""}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:20 }}>
         {[
-          { label:"Total Warnings", val:warnings.length, color:T.accent },
-          { label:"Verbal",  val:warnings.filter(w=>w.warningType==="Verbal Warning").length,  color:"#f59e0b" },
-          { label:"Written", val:warnings.filter(w=>w.warningType==="Written Warning").length, color:"#ef4444" },
-          { label:"Final",   val:warnings.filter(w=>w.warningType==="Final Warning").length,   color:"#7c3aed" },
+          { label:"Total Warnings", val:warnings.length,                                               color:T.accent,   list:warnings },
+          { label:"Verbal",  val:warnings.filter(w=>w.warningType==="Verbal Warning").length,  color:"#f59e0b",  list:warnings.filter(w=>w.warningType==="Verbal Warning") },
+          { label:"Written", val:warnings.filter(w=>w.warningType==="Written Warning").length, color:"#ef4444",  list:warnings.filter(w=>w.warningType==="Written Warning") },
+          { label:"Final",   val:warnings.filter(w=>w.warningType==="Final Warning").length,   color:"#7c3aed",  list:warnings.filter(w=>w.warningType==="Final Warning") },
         ].map((s,i)=>(
-          <div key={i} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:12, padding:"16px 18px" }}>
+          <div key={i} onClick={()=>setDrilldown({ title:s.label+" Warnings", warnings:s.list })}
+            style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:12, padding:"16px 18px", cursor:"pointer" }}
+            onMouseEnter={e=>e.currentTarget.style.borderColor=s.color+"60"}
+            onMouseLeave={e=>e.currentTarget.style.borderColor=T.border}>
             <div style={{ fontSize:10, fontWeight:700, color:T.muted, textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:8 }}>{s.label}</div>
             <div style={{ fontSize:28, fontWeight:800, color:T.text }}>{s.val}</div>
           </div>
@@ -2071,8 +2119,8 @@ function ManagerView({ coachings, warnings, T, onOpenCoaching, targets, onSetTar
 
       {/* Drilldown modal — warnings */}
       {warnDrill && (
-        <div style={{ position:"fixed", inset:0, background:"#00000099", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
-          <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:18, width:"100%", maxWidth:680, maxHeight:"85vh", display:"flex", flexDirection:"column", boxShadow:"0 32px 80px #00000070" }}>
+        <div onClick={()=>setWarnDrill(null)} style={{ position:"fixed", inset:0, background:"#00000099", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:18, width:"100%", maxWidth:680, maxHeight:"85vh", display:"flex", flexDirection:"column", boxShadow:"0 32px 80px #00000070" }}>
             <div style={{ padding:"18px 22px 14px", borderBottom:`1px solid ${T.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
               <div style={{ fontSize:15, fontWeight:700, color:T.text }}>{warnDrill.title}</div>
               <button onClick={()=>setWarnDrill(null)} style={{ background:"none", border:"none", color:T.muted, cursor:"pointer", fontSize:20 }}>×</button>
