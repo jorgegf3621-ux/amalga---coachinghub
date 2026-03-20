@@ -523,7 +523,7 @@ function CoachingDetailModal({ coaching, onClose, onAcknowledge, isAgent = false
                         border: "none",
                         cursor: "pointer",
                         fontSize: 28,
-                        color: s <= (hoverRating || rating) ? "#f59e0b" : T.border,
+                        color: s <= (hoverRating || rating) ? "#f59e0b" : "#d1d5db",
                         padding: 0,
                         transition: "color 0.1s",
                       }}
@@ -1233,7 +1233,7 @@ function DrilldownModal({ title, coachings, T, onClose, onOpenCoaching }) {
                       <td style={{ padding:"11px 14px" }}><span style={{ fontSize:10, fontWeight:600, color:ss.text, background:ss.bg, padding:"3px 8px", borderRadius:99 }}>{c.status}</span></td>
                       <td style={{ padding:"11px 14px" }}>
                         {c.agentRating
-                          ? <div style={{ display:"flex", gap:1 }}>{[1,2,3,4,5].map(s=><span key={s} style={{ fontSize:11, color:s<=c.agentRating?"#f59e0b":T.border }}>★</span>)}</div>
+                          ? <div style={{ display:"flex", gap:1 }}>{[1,2,3,4,5].map(s=><span key={s} style={{ fontSize:11, color:s<=c.agentRating?"#f59e0b":"#d1d5db" }}>★</span>)}</div>
                           : <span style={{ color:T.muted, fontSize:11 }}>—</span>}
                       </td>
                     </tr>
@@ -1318,7 +1318,7 @@ function TriadDetailModal({ triad, onClose, onAcknowledge, T = THEMES.dark }) {
           {acked ? (
             <div style={{ background:"#10b98115", border:"1px solid #10b98130", borderRadius:12, padding:16, textAlign:"center" }}>
               <div style={{ fontSize:13, fontWeight:700, color:"#10b981", marginBottom:4 }}>✓ Triad Acknowledged</div>
-              {triad.tlRating && <div style={{ display:"flex", justifyContent:"center", gap:2, marginBottom:4 }}>{[1,2,3,4,5].map(s=><span key={s} style={{ fontSize:16, color:s<=triad.tlRating?"#f59e0b":T.border }}>★</span>)}</div>}
+              {triad.tlRating && <div style={{ display:"flex", justifyContent:"center", gap:2, marginBottom:4 }}>{[1,2,3,4,5].map(s=><span key={s} style={{ fontSize:16, color:s<=triad.tlRating?"#f59e0b":"#d1d5db" }}>★</span>)}</div>}
               {triad.tlComment && <div style={{ fontSize:12, color:T.muted }}>{triad.tlComment}</div>}
             </div>
           ) : (
@@ -1328,7 +1328,7 @@ function TriadDetailModal({ triad, onClose, onAcknowledge, T = THEMES.dark }) {
               <div style={{ display:"flex", gap:6, marginBottom:16 }}>
                 {[1,2,3,4,5].map(s=>(
                   <span key={s} onClick={()=>setRating(s)} onMouseEnter={()=>setHover(s)} onMouseLeave={()=>setHover(0)}
-                    style={{ fontSize:28, cursor:"pointer", color:s<=(hover||rating)?"#f59e0b":T.border, transition:"color 0.1s" }}>★</span>
+                    style={{ fontSize:28, cursor:"pointer", color:s<=(hover||rating)?"#f59e0b":"#d1d5db", transition:"color 0.1s" }}>★</span>
                 ))}
               </div>
               <div style={{ fontSize:11, color:T.muted, marginBottom:6, textTransform:"uppercase", letterSpacing:"0.05em" }}>Comments (optional)</div>
