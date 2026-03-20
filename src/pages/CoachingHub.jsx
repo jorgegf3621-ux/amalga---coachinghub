@@ -126,6 +126,10 @@ const inp = {
 
 const ta = { ...inp, resize: "vertical", minHeight: 80, lineHeight: 1.6 };
 
+// Theme-aware input/textarea helpers
+const inpStyle = (T) => ({ ...inp, background: T.inputBg, color: T.text, border: `1px solid ${T.border}` });
+const taStyle  = (T) => ({ ...ta,  background: T.inputBg, color: T.text, border: `1px solid ${T.border}` });
+
 function safeInitials(name) {
   return (name || "U")
     .split(" ")
@@ -217,7 +221,7 @@ function RadioGroup({ options, value, onChange, colors = {}, T = THEMES.dark }) 
   );
 }
 
-function BulletInput({ value, onChange, placeholder }) {
+function BulletInput({ value, onChange, placeholder, T = THEMES.dark }) {
   const lines = value ? value.split("\n") : [""];
   const updateLine = (i, v) => {
     const updated = [...lines];
@@ -238,7 +242,7 @@ function BulletInput({ value, onChange, placeholder }) {
             value={line}
             onChange={(e) => updateLine(i, e.target.value)}
             placeholder={placeholder}
-            style={{ ...inp, flex: 1, padding: "7px 10px" }}
+            style={{ ...inpStyle(T), flex: 1, padding: "7px 10px" }}
           />
           {lines.length > 1 && (
             <button
@@ -280,17 +284,17 @@ function BulletInput({ value, onChange, placeholder }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Coaching Detail Modal (Specialist)
 /// ────────────────────────────────────────────────────────────────────────────
-function CoachingDetailModal({ coaching, onClose, onAcknowledge, isAgent = false }) {
+function CoachingDetailModal({ coaching, onClose, onAcknowledge, isAgent = false, T = THEMES.dark }) {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const acknowledged = coaching.status === "Acknowledged";
+  const acknowledged = coaching.status === "Acknowledged" || submitted;
 
   const handleAcknowledge = () => {
     onAcknowledge(coaching.id, rating, comment);
     setSubmitted(true);
-    setTimeout(onClose, 1200);
+    setTimeout(onClose, 900);
   };
 
   const tc = TYPE_COLOR[coaching.type] || "#64748b";
@@ -316,14 +320,14 @@ function CoachingDetailModal({ coaching, onClose, onAcknowledge, isAgent = false
             .split("\n")
             .filter((l) => l.trim())
             .map((l, i) => (
-              <li key={i} style={{ fontSize: 13, color: "#cbd5e1", marginBottom: 4, lineHeight: 1.6 }}>
+              <li key={i} style={{ fontSize: 13, color: T.sub, marginBottom: 4, lineHeight: 1.6 }}>
                 {l}
               </li>
             ))}
         </ul>
       ) : (
-        <div style={{ fontSize: 13, color: "#cbd5e1", lineHeight: 1.7 }}>
-          {content || <span style={{ color: "#475569", fontStyle: "italic" }}>Not specified</span>}
+        <div style={{ fontSize: 13, color: T.sub, lineHeight: 1.7 }}>
+          {content || <span style={{ color: T.muted, fontStyle: "italic" }}>Not specified</span>}
         </div>
       )}
     </div>
@@ -344,8 +348,8 @@ function CoachingDetailModal({ coaching, onClose, onAcknowledge, isAgent = false
     >
       <div
         style={{
-          background: "#13151f",
-          border: "1px solid #1e2130",
+          background: T.card,
+          border: `1px solid ${T.border}`,
           borderRadius: 18,
           width: "100%",
           maxWidth: 600,
@@ -354,7 +358,7 @@ function CoachingDetailModal({ coaching, onClose, onAcknowledge, isAgent = false
           flexDirection: "column",
         }}
       >
-        <div style={{ padding: "20px 26px 16px", borderBottom: "1px solid #1e2130", flexShrink: 0 }}>
+        <div style={{ padding: "20px 26px 16px", borderBottom: `1px solid ${T.border}`, flexShrink: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
@@ -378,15 +382,15 @@ function CoachingDetailModal({ coaching, onClose, onAcknowledge, isAgent = false
                   </span>
                 )}
               </div>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#f1f5f9" }}>Coaching Record</h3>
-              <div style={{ fontSize: 12, color: "#64748b", marginTop: 3 }}>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Coaching Record</h3>
+              <div style={{ fontSize: 12, color: T.muted, marginTop: 3 }}>
                 {coaching.date} · {coaching.dept || "—"}
               </div>
             </div>
             <button
               type="button"
               onClick={onClose}
-              style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: 20 }}
+              style={{ background: "none", border: "none", color: T.muted, cursor: "pointer", fontSize: 20 }}
             >
               ×
             </button>
@@ -395,18 +399,18 @@ function CoachingDetailModal({ coaching, onClose, onAcknowledge, isAgent = false
 
         <div style={{ overflowY: "auto", flex: 1, padding: "22px 26px" }}>
           <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
-            <div style={{ flex: 1, background: "#0d0f18", borderRadius: 10, padding: "12px 14px" }}>
-              <div style={{ fontSize: 10, color: "#64748b", marginBottom: 4 }}>SPECIALIST</div>
+            <div style={{ flex: 1, background: T.bg, borderRadius: 10, padding: "12px 14px" }}>
+              <div style={{ fontSize: 10, color: T.muted, marginBottom: 4 }}>SPECIALIST</div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <Avatar name={coaching.agentName} size={26} color="#6366f1" />
-                <div style={{ fontSize: 13, color: "#f1f5f9", fontWeight: 600 }}>{coaching.agentName}</div>
+                <div style={{ fontSize: 13, color: T.text, fontWeight: 600 }}>{coaching.agentName}</div>
               </div>
             </div>
-            <div style={{ flex: 1, background: "#0d0f18", borderRadius: 10, padding: "12px 14px" }}>
-              <div style={{ fontSize: 10, color: "#64748b", marginBottom: 4 }}>TEAM LEAD</div>
+            <div style={{ flex: 1, background: T.bg, borderRadius: 10, padding: "12px 14px" }}>
+              <div style={{ fontSize: 10, color: T.muted, marginBottom: 4 }}>TEAM LEAD</div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <Avatar name={coaching.tlName || "—"} size={26} color="#14b8a6" />
-                <div style={{ fontSize: 13, color: "#f1f5f9", fontWeight: 600 }}>{coaching.tlName || "—"}</div>
+                <div style={{ fontSize: 13, color: T.text, fontWeight: 600 }}>{coaching.tlName || "—"}</div>
               </div>
             </div>
           </div>
@@ -499,11 +503,11 @@ function CoachingDetailModal({ coaching, onClose, onAcknowledge, isAgent = false
           {coaching.notes && <Section title="Additional Notes" content={coaching.notes} />}
 
           {!acknowledged && coaching.status === "Delivered" && (
-            <div style={{ background: "#1e2130", borderRadius: 12, padding: 18, marginTop: 8 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#f1f5f9", marginBottom: 14 }}>Your Feedback</div>
+            <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 12, padding: 18, marginTop: 8 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 14 }}>Your Feedback</div>
 
               <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <div style={{ fontSize: 11, color: T.muted, marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
                   Rate this coaching session
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
@@ -519,7 +523,7 @@ function CoachingDetailModal({ coaching, onClose, onAcknowledge, isAgent = false
                         border: "none",
                         cursor: "pointer",
                         fontSize: 28,
-                        color: s <= (hoverRating || rating) ? "#f59e0b" : "#1e2130",
+                        color: s <= (hoverRating || rating) ? "#f59e0b" : T.border,
                         padding: 0,
                         transition: "color 0.1s",
                       }}
@@ -531,14 +535,14 @@ function CoachingDetailModal({ coaching, onClose, onAcknowledge, isAgent = false
               </div>
 
               <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 6, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <div style={{ fontSize: 11, color: T.muted, marginBottom: 6, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
                   Comments (optional)
                 </div>
                 <textarea
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   placeholder="Share your thoughts..."
-                  style={{ ...ta, minHeight: 70, background: "#0d0f18" }}
+                  style={{ ...taStyle(T), minHeight: 70 }}
                 />
               </div>
 
@@ -551,7 +555,7 @@ function CoachingDetailModal({ coaching, onClose, onAcknowledge, isAgent = false
                   padding: "11px",
                   borderRadius: 9,
                   border: "none",
-                  background: rating > 0 ? "linear-gradient(135deg,#14b8a6,#0d9488)" : "#0b3a36",
+                  background: rating > 0 ? "linear-gradient(135deg,#14b8a6,#0d9488)" : T.border,
                   color: "#fff",
                   fontSize: 13,
                   fontWeight: 700,
@@ -568,7 +572,7 @@ function CoachingDetailModal({ coaching, onClose, onAcknowledge, isAgent = false
             <div style={{ background: "#10b98115", border: "1px solid #10b98140", borderRadius: 10, padding: 14, textAlign: "center" }}>
               <div style={{ fontSize: 20, marginBottom: 6 }}>✅</div>
               <div style={{ fontSize: 13, fontWeight: 600, color: "#10b981" }}>Coaching Acknowledged</div>
-              <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>Thank you for your feedback.</div>
+              <div style={{ fontSize: 12, color: T.muted, marginTop: 4 }}>Thank you for your feedback.</div>
             </div>
           )}
         </div>
@@ -1241,32 +1245,38 @@ function DrilldownModal({ title, coachings, T, onClose, onOpenCoaching }) {
 }
 
 // ── TRIAD DETAIL MODAL (TL acknowledges) ─────────────────────────────────────
-function TriadDetailModal({ triad, onClose, onAcknowledge }) {
+function TriadDetailModal({ triad, onClose, onAcknowledge, T = THEMES.dark }) {
   const [rating, setRating] = useState(0);
   const [hover,  setHover]  = useState(0);
   const [comment, setComment] = useState("");
-  const acked = !!triad.acknowledgedAt;
+  const [submitted, setSubmitted] = useState(false);
+  const acked = !!triad.acknowledgedAt || submitted;
+
+  const handleAcknowledge = () => {
+    onAcknowledge(triad.id, rating, comment);
+    setSubmitted(true);
+  };
 
   return (
     <div onClick={onClose} style={{ position:"fixed", inset:0, background:"#000000cc", display:"flex", alignItems:"center", justifyContent:"center", zIndex:100, padding:20 }}>
-      <div onClick={e=>e.stopPropagation()} style={{ background:"#13151f", border:"1px solid #1e2130", borderRadius:18, width:"100%", maxWidth:620, maxHeight:"92vh", display:"flex", flexDirection:"column" }}>
-        <div style={{ padding:"20px 26px 16px", borderBottom:"1px solid #1e2130", display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexShrink:0 }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:18, width:"100%", maxWidth:620, maxHeight:"92vh", display:"flex", flexDirection:"column" }}>
+        <div style={{ padding:"20px 26px 16px", borderBottom:`1px solid ${T.border}`, display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexShrink:0 }}>
           <div>
             <div style={{ fontSize:11, fontWeight:700, color:"#14b8a6", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:4 }}>Manager Triad</div>
-            <h3 style={{ margin:0, fontSize:16, fontWeight:700, color:"#f1f5f9" }}>Triad Review</h3>
-            <div style={{ fontSize:12, color:"#64748b", marginTop:3 }}>{triad.date} · {triad.agentName || "—"}</div>
+            <h3 style={{ margin:0, fontSize:16, fontWeight:700, color:T.text }}>Triad Review</h3>
+            <div style={{ fontSize:12, color:T.muted, marginTop:3 }}>{triad.date} · {triad.agentName || "—"}</div>
           </div>
-          <button onClick={onClose} style={{ background:"none", border:"none", color:"#64748b", cursor:"pointer", fontSize:20 }}>×</button>
+          <button onClick={onClose} style={{ background:"none", border:"none", color:T.muted, cursor:"pointer", fontSize:20 }}>×</button>
         </div>
         <div style={{ overflowY:"auto", flex:1, padding:"22px 26px" }}>
           <div style={{ display:"flex", gap:16, marginBottom:20 }}>
-            <div style={{ flex:1, background:"#0d0f18", borderRadius:10, padding:14 }}>
-              <div style={{ fontSize:10, color:"#64748b", fontWeight:700, textTransform:"uppercase", marginBottom:4 }}>Manager</div>
-              <div style={{ fontSize:13, color:"#f1f5f9", fontWeight:600 }}>{triad.managerName||"—"}</div>
+            <div style={{ flex:1, background:T.bg, borderRadius:10, padding:14 }}>
+              <div style={{ fontSize:10, color:T.muted, fontWeight:700, textTransform:"uppercase", marginBottom:4 }}>Manager</div>
+              <div style={{ fontSize:13, color:T.text, fontWeight:600 }}>{triad.managerName||"—"}</div>
             </div>
-            <div style={{ flex:1, background:"#0d0f18", borderRadius:10, padding:14 }}>
-              <div style={{ fontSize:10, color:"#64748b", fontWeight:700, textTransform:"uppercase", marginBottom:4 }}>Coaching Reviewed</div>
-              <div style={{ fontSize:13, color:"#f1f5f9", fontWeight:600 }}>{triad.agentName||"—"}</div>
+            <div style={{ flex:1, background:T.bg, borderRadius:10, padding:14 }}>
+              <div style={{ fontSize:10, color:T.muted, fontWeight:700, textTransform:"uppercase", marginBottom:4 }}>Coaching Reviewed</div>
+              <div style={{ fontSize:13, color:T.text, fontWeight:600 }}>{triad.agentName||"—"}</div>
             </div>
           </div>
           {[
@@ -1278,7 +1288,7 @@ function TriadDetailModal({ triad, onClose, onAcknowledge }) {
               <div style={{ fontSize:11, fontWeight:700, color:"#14b8a6", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:8 }}>{label}</div>
               <ul style={{ margin:0, paddingLeft:18 }}>
                 {content.split("\n").filter(l=>l.trim()).map((l,i)=>(
-                  <li key={i} style={{ fontSize:13, color:"#e2e8f0", lineHeight:1.7 }}>{l}</li>
+                  <li key={i} style={{ fontSize:13, color:T.sub, lineHeight:1.7 }}>{l}</li>
                 ))}
               </ul>
             </div>
@@ -1286,15 +1296,15 @@ function TriadDetailModal({ triad, onClose, onAcknowledge }) {
           {(triad.followUpDate || triad.notes) && (
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:20 }}>
               {triad.followUpDate && (
-                <div style={{ background:"#0d0f18", borderRadius:10, padding:14 }}>
-                  <div style={{ fontSize:10, color:"#64748b", fontWeight:700, textTransform:"uppercase", marginBottom:4 }}>Follow-Up Date</div>
-                  <div style={{ fontSize:13, color:"#e2e8f0" }}>{triad.followUpDate}</div>
+                <div style={{ background:T.bg, borderRadius:10, padding:14 }}>
+                  <div style={{ fontSize:10, color:T.muted, fontWeight:700, textTransform:"uppercase", marginBottom:4 }}>Follow-Up Date</div>
+                  <div style={{ fontSize:13, color:T.sub }}>{triad.followUpDate}</div>
                 </div>
               )}
               {triad.notes && (
-                <div style={{ background:"#0d0f18", borderRadius:10, padding:14 }}>
-                  <div style={{ fontSize:10, color:"#64748b", fontWeight:700, textTransform:"uppercase", marginBottom:4 }}>Notes</div>
-                  <div style={{ fontSize:13, color:"#e2e8f0" }}>{triad.notes}</div>
+                <div style={{ background:T.bg, borderRadius:10, padding:14 }}>
+                  <div style={{ fontSize:10, color:T.muted, fontWeight:700, textTransform:"uppercase", marginBottom:4 }}>Notes</div>
+                  <div style={{ fontSize:13, color:T.sub }}>{triad.notes}</div>
                 </div>
               )}
             </div>
@@ -1302,24 +1312,24 @@ function TriadDetailModal({ triad, onClose, onAcknowledge }) {
           {acked ? (
             <div style={{ background:"#10b98115", border:"1px solid #10b98130", borderRadius:12, padding:16, textAlign:"center" }}>
               <div style={{ fontSize:13, fontWeight:700, color:"#10b981", marginBottom:4 }}>✓ Triad Acknowledged</div>
-              {triad.tlRating && <div style={{ display:"flex", justifyContent:"center", gap:2, marginBottom:4 }}>{[1,2,3,4,5].map(s=><span key={s} style={{ fontSize:16, color:s<=triad.tlRating?"#f59e0b":"#1e2130" }}>★</span>)}</div>}
-              {triad.tlComment && <div style={{ fontSize:12, color:"#64748b" }}>{triad.tlComment}</div>}
+              {triad.tlRating && <div style={{ display:"flex", justifyContent:"center", gap:2, marginBottom:4 }}>{[1,2,3,4,5].map(s=><span key={s} style={{ fontSize:16, color:s<=triad.tlRating?"#f59e0b":T.border }}>★</span>)}</div>}
+              {triad.tlComment && <div style={{ fontSize:12, color:T.muted }}>{triad.tlComment}</div>}
             </div>
           ) : (
-            <div style={{ background:"#13151f", border:"1px solid #1e2130", borderRadius:12, padding:18 }}>
-              <div style={{ fontSize:12, fontWeight:700, color:"#f1f5f9", marginBottom:14 }}>Your Feedback</div>
-              <div style={{ fontSize:11, color:"#94a3b8", marginBottom:8, textTransform:"uppercase", letterSpacing:"0.05em" }}>Rate this triad session</div>
+            <div style={{ background:T.bg, border:`1px solid ${T.border}`, borderRadius:12, padding:18 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:T.text, marginBottom:14 }}>Your Feedback</div>
+              <div style={{ fontSize:11, color:T.muted, marginBottom:8, textTransform:"uppercase", letterSpacing:"0.05em" }}>Rate this triad session</div>
               <div style={{ display:"flex", gap:6, marginBottom:16 }}>
                 {[1,2,3,4,5].map(s=>(
                   <span key={s} onClick={()=>setRating(s)} onMouseEnter={()=>setHover(s)} onMouseLeave={()=>setHover(0)}
-                    style={{ fontSize:28, cursor:"pointer", color:s<=(hover||rating)?"#f59e0b":"#1e2130", transition:"color 0.1s" }}>★</span>
+                    style={{ fontSize:28, cursor:"pointer", color:s<=(hover||rating)?"#f59e0b":T.border, transition:"color 0.1s" }}>★</span>
                 ))}
               </div>
-              <div style={{ fontSize:11, color:"#94a3b8", marginBottom:6, textTransform:"uppercase", letterSpacing:"0.05em" }}>Comments (optional)</div>
+              <div style={{ fontSize:11, color:T.muted, marginBottom:6, textTransform:"uppercase", letterSpacing:"0.05em" }}>Comments (optional)</div>
               <textarea value={comment} onChange={e=>setComment(e.target.value)} placeholder="Add your comments..."
-                style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:"1px solid #1e2130", background:"#0d0f18", color:"#f1f5f9", fontSize:13, outline:"none", resize:"vertical", minHeight:80, boxSizing:"border-box", fontFamily:"inherit" }} />
-              <button onClick={()=>onAcknowledge(triad.id, rating, comment)} disabled={!rating}
-                style={{ width:"100%", marginTop:14, padding:12, borderRadius:10, border:"none", background:rating?"linear-gradient(135deg,#14b8a6,#0d9488)":"#1e2130", color:rating?"#fff":"#64748b", fontSize:14, fontWeight:700, cursor:rating?"pointer":"default", fontFamily:"inherit" }}>
+                style={{ ...taStyle(T), minHeight:80 }} />
+              <button onClick={handleAcknowledge} disabled={!rating}
+                style={{ width:"100%", marginTop:14, padding:12, borderRadius:10, border:"none", background:rating?"linear-gradient(135deg,#14b8a6,#0d9488)":T.border, color:rating?"#fff":T.muted, fontSize:14, fontWeight:700, cursor:rating?"pointer":"default", fontFamily:"inherit" }}>
                 ✓ Acknowledge & Submit
               </button>
             </div>
@@ -1362,7 +1372,7 @@ function TriadModal({ onClose, onSave, profiles = [], coachings = [], selfName =
         <div style={{ fontSize:12, fontWeight:700, color:T.accent, marginBottom:18, textTransform:"uppercase", letterSpacing:"0.05em" }}>Basic Info</div>
 
         <Field label="Team Lead" required>
-          <select value={form.tlName} onChange={e=>{ set("tlName", e.target.value); set("coachingId",""); set("agentName",""); }} style={inp}>
+          <select value={form.tlName} onChange={e=>{ set("tlName", e.target.value); set("coachingId",""); set("agentName",""); }} style={inpStyle(T)}>
             <option value="">Select a Team Lead...</option>
             {allTLs.map(tl=><option key={tl.id} value={tl.full_name}>{tl.full_name}</option>)}
           </select>
@@ -1370,7 +1380,7 @@ function TriadModal({ onClose, onSave, profiles = [], coachings = [], selfName =
 
         {form.tlName && (
           <Field label="Coaching Reviewed" hint="Select the coaching session being triaded (optional)">
-            <select value={form.coachingId} onChange={e=>handleSelectCoaching(e.target.value)} style={inp}>
+            <select value={form.coachingId} onChange={e=>handleSelectCoaching(e.target.value)} style={inpStyle(T)}>
               <option value="">— Select a coaching —</option>
               {tlCoachings.map(c=><option key={c.id} value={c.id}>{c.agentName} · {c.date} · {c.type}</option>)}
             </select>
@@ -1379,12 +1389,12 @@ function TriadModal({ onClose, onSave, profiles = [], coachings = [], selfName =
 
         {form.agentName && (
           <Field label="Specialist Coached">
-            <input value={form.agentName} readOnly style={{ ...inp, color:T.muted }} />
+            <input value={form.agentName} readOnly style={{ ...inpStyle(T), color:T.muted }} />
           </Field>
         )}
 
         <Field label="Triad Date" required>
-          <input type="date" value={form.date} onChange={e=>set("date",e.target.value)} style={inp} />
+          <input type="date" value={form.date} onChange={e=>set("date",e.target.value)} style={inpStyle(T)} />
         </Field>
       </div>
 
@@ -1392,23 +1402,23 @@ function TriadModal({ onClose, onSave, profiles = [], coachings = [], selfName =
         <div style={{ fontSize:12, fontWeight:700, color:T.accent, marginBottom:18, textTransform:"uppercase", letterSpacing:"0.05em" }}>Observations</div>
 
         <Field label="Strengths Observed" required hint="What did the Team Lead do well in the coaching?">
-          <BulletInput value={form.strengths} onChange={v=>set("strengths",v)} placeholder="Strength observed..." />
+          <BulletInput T={T} value={form.strengths} onChange={v=>set("strengths",v)} placeholder="Strength observed..." />
         </Field>
 
         <Field label="Areas of Improvement" hint="What can the Team Lead improve?">
-          <BulletInput value={form.areasOfImprovement} onChange={v=>set("areasOfImprovement",v)} placeholder="Area of improvement..." />
+          <BulletInput T={T} value={form.areasOfImprovement} onChange={v=>set("areasOfImprovement",v)} placeholder="Area of improvement..." />
         </Field>
 
         <Field label="Action Plan" hint="Concrete steps for improvement">
-          <BulletInput value={form.actionPlan} onChange={v=>set("actionPlan",v)} placeholder="Action step..." />
+          <BulletInput T={T} value={form.actionPlan} onChange={v=>set("actionPlan",v)} placeholder="Action step..." />
         </Field>
 
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
           <Field label="Follow-Up Date">
-            <input type="date" value={form.followUpDate} onChange={e=>set("followUpDate",e.target.value)} style={inp} />
+            <input type="date" value={form.followUpDate} onChange={e=>set("followUpDate",e.target.value)} style={inpStyle(T)} />
           </Field>
           <Field label="Additional Notes">
-            <input value={form.notes} onChange={e=>set("notes",e.target.value)} placeholder="Optional notes..." style={inp} />
+            <input value={form.notes} onChange={e=>set("notes",e.target.value)} placeholder="Optional notes..." style={inpStyle(T)} />
           </Field>
         </div>
       </div>
@@ -1773,7 +1783,7 @@ function DashboardView({ coachings, warnings, role, T, onOpenCoaching, targets, 
         {[
           { label:"Total Coachings", val:coachings.length, icon:"📋", color:T.accent, onClick:()=>setDrilldown({ title:"All Coachings", coachings }) },
           { label:"Pending", val:coachings.filter(c=>c.status==="Pending").length, icon:"⏳", color:"#f59e0b", onClick:()=>setDrilldown({ title:"Pending Coachings", coachings:coachings.filter(c=>c.status==="Pending") }) },
-          { label:"Warnings Issued", val:warnings.length, icon:"🚨", color:"#ef4444", onClick:()=>setDrilldown({ title:"Warnings Issued", warnings }) },
+          { label:"Warnings Delivered", val:coachings.filter(c=>c.warningDelivered==="Yes").length, icon:"🚨", color:"#ef4444", onClick:()=>setDrilldown({ title:"Coachings with Warning Delivered", coachings:coachings.filter(c=>c.warningDelivered==="Yes") }) },
         ].map((s,i)=>(
           <div key={i} onClick={s.onClick} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:12, padding:"16px 18px", cursor:"pointer" }}
             onMouseEnter={e=>e.currentTarget.style.borderColor=s.color+"60"}
@@ -1829,13 +1839,14 @@ function DashboardView({ coachings, warnings, role, T, onOpenCoaching, targets, 
             {weeklyData.map((w,i)=><div key={i} style={{ flex:1, textAlign:"center", fontSize:9, color:T.muted }}>{w.week}</div>)}
           </div>
           <div style={{ marginTop:16, paddingTop:14, borderTop:`1px solid ${T.border}` }}>
-            <div style={{ fontSize:12, fontWeight:700, color:T.text, marginBottom:10 }}>Warnings by Type</div>
+            <div style={{ fontSize:12, fontWeight:700, color:T.text, marginBottom:10 }}>Warnings Delivered by Type</div>
             {["Verbal Warning","Written Warning","Final Warning"].map(wt=>{
               const ws=WARNING_STYLE[wt];
+              const count = coachings.filter(c=>c.warningDelivered==="Yes"&&c.warningType===wt).length;
               return (
                 <div key={wt} style={{ display:"flex", justifyContent:"space-between", marginBottom:7 }}>
                   <span style={{ fontSize:11, color:T.muted }}>{wt}</span>
-                  <span style={{ fontSize:11, fontWeight:700, color:ws?.color||T.muted, background:ws?.bg||T.border, padding:"2px 8px", borderRadius:99 }}>{warnings.filter(w=>w.warningType===wt).length}</span>
+                  <span style={{ fontSize:11, fontWeight:700, color:ws?.color||T.muted, background:ws?.bg||T.border, padding:"2px 8px", borderRadius:99 }}>{count}</span>
                 </div>
               );
             })}
@@ -2282,7 +2293,7 @@ function ManagerView({ coachings, warnings, T, onOpenCoaching, targets, onSetTar
           { label:"Total Coachings",  val:filteredAll.length, icon:"📋", color:T.accent,   onClick:()=>setDrilldown({title:"All Coachings", coachings:filteredAll}) },
           { label:"Acknowledged",     val:filteredAll.filter(c=>c.status==="Acknowledged").length, icon:"✅", color:"#10b981", onClick:()=>setDrilldown({title:"Acknowledged Coachings", coachings:filteredAll.filter(c=>c.status==="Acknowledged")}) },
           { label:"Attrition Risks",  val:filteredAll.filter(c=>c.ews==="Red"||c.ews==="Imminent").length, icon:"⚠️", color:"#ef4444", onClick:()=>setDrilldown({title:"Attrition Risks (Red + Imminent)", coachings:filteredAll.filter(c=>c.ews==="Red"||c.ews==="Imminent")}) },
-          { label:"Warnings Issued",  val:warnings.length, icon:"🚨", color:"#f59e0b",   onClick:()=>setWarnDrill({title:"Warnings Issued", warnings}) },
+          { label:"Warnings Delivered", val:filteredAll.filter(c=>c.warningDelivered==="Yes").length, icon:"🚨", color:"#f59e0b", onClick:()=>setDrilldown({title:"Coachings with Warning Delivered", coachings:filteredAll.filter(c=>c.warningDelivered==="Yes")}) },
         ].map((s,i)=>(
           <div key={i} onClick={s.onClick} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:12, padding:"16px 18px", cursor:"pointer" }}
             onMouseEnter={e=>e.currentTarget.style.borderColor=s.color+"60"}
@@ -2898,8 +2909,8 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
         )}
       </div>
 
-      {selectedCoaching && <CoachingDetailModal coaching={selectedCoaching} onClose={()=>setSelectedCoaching(null)} onAcknowledge={acknowledgeCoaching} isAgent={isSpecialist} />}
-      {selectedTriad && <TriadDetailModal triad={selectedTriad} onClose={()=>setSelectedTriad(null)} onAcknowledge={acknowledgeTriad} />}
+      {selectedCoaching && <CoachingDetailModal coaching={selectedCoaching} onClose={()=>setSelectedCoaching(null)} onAcknowledge={acknowledgeCoaching} isAgent={isSpecialist} T={T} />}
+      {selectedTriad && <TriadDetailModal triad={selectedTriad} onClose={()=>setSelectedTriad(null)} onAcknowledge={acknowledgeTriad} T={T} />}
     </div>
   );
 }
