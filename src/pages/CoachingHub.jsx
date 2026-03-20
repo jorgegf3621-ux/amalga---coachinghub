@@ -678,11 +678,11 @@ function CoachingModal({ onClose, onSave, agentsForDropdown = [], clientProfiles
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
             {["Basic Info", form.coachingReason || "Reason", "Close Out"].map((s, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <div style={{ width: 20, height: 20, borderRadius: "50%", background: step >= i + 1 ? "#14b8a6" : "#1e2130", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: step >= i + 1 ? "#fff" : "#64748b" }}>
+                <div style={{ width: 20, height: 20, borderRadius: "50%", background: step >= i + 1 ? "#14b8a6" : T.border, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: step >= i + 1 ? "#fff" : T.muted }}>
                   {i + 1}
                 </div>
                 <span style={{ fontSize: 11, color: step === i + 1 ? "#14b8a6" : "#64748b", fontWeight: step === i + 1 ? 700 : 400 }}>{s}</span>
-                {i < 2 && <div style={{ width: 16, height: 1, background: "#1e2130" }} />}
+                {i < 2 && <div style={{ width: 16, height: 1, background: T.border }} />}
               </div>
             ))}
           </div>
@@ -892,19 +892,19 @@ function CoachingModal({ onClose, onSave, agentsForDropdown = [], clientProfiles
             Cancel
           </button>
           {step > 1 && (
-            <button type="button" onClick={() => setStep(s => s - 1)} style={{ padding: "9px 18px", borderRadius: 8, border: "1px solid #1e2130", background: "transparent", color: "#94a3b8", fontSize: 12, cursor: "pointer" }}>
+            <button type="button" onClick={() => setStep(s => s - 1)} style={{ padding: "9px 18px", borderRadius: 8, border: `1px solid ${T.border}`, background: "transparent", color: T.muted, fontSize: 12, cursor: "pointer" }}>
               ← Back
             </button>
           )}
           <div style={{ flex: 1 }} />
           {step < 3 ? (
             <button type="button" onClick={() => setStep(s => s + 1)} disabled={!canNext}
-              style={{ padding: "9px 22px", borderRadius: 8, border: "none", background: canNext ? "linear-gradient(135deg,#14b8a6,#0d9488)" : "#1e2130", color: canNext ? "#fff" : "#64748b", fontSize: 12, fontWeight: 600, cursor: canNext ? "pointer" : "not-allowed" }}>
+              style={{ padding: "9px 22px", borderRadius: 8, border: "none", background: canNext ? "linear-gradient(135deg,#14b8a6,#0d9488)" : T.border, color: canNext ? "#fff" : T.muted, fontSize: 12, fontWeight: 600, cursor: canNext ? "pointer" : "not-allowed" }}>
               Next →
             </button>
           ) : (
             <button type="button" onClick={() => { onSave(form); onClose(); }} disabled={!form.ews}
-              style={{ padding: "9px 22px", borderRadius: 8, border: "none", background: form.ews ? "linear-gradient(135deg,#14b8a6,#0d9488)" : "#1e2130", color: form.ews ? "#fff" : "#64748b", fontSize: 12, fontWeight: 600, cursor: form.ews ? "pointer" : "not-allowed" }}>
+              style={{ padding: "9px 22px", borderRadius: 8, border: "none", background: form.ews ? "linear-gradient(135deg,#14b8a6,#0d9488)" : T.border, color: form.ews ? "#fff" : T.muted, fontSize: 12, fontWeight: 600, cursor: form.ews ? "pointer" : "not-allowed" }}>
               Save Coaching ✓
             </button>
           )}
