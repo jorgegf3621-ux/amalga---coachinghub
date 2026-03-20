@@ -619,6 +619,8 @@ function CoachingModal({ onClose, onSave, agentsForDropdown = [], clientProfiles
     redFlag: "", otherReason: "", companyActions: "",
     // Warning section (all types)
     warningDelivered: "", warningType: "",
+    // Top agent nomination
+    topAgent: "",
   };
 
   const [step, setStep] = useState(1);
@@ -861,6 +863,9 @@ function CoachingModal({ onClose, onSave, agentsForDropdown = [], clientProfiles
               <Field label="EWS Status" required>
                 <RadioGroup T={T} options={EWS_OPTIONS} value={form.ews} onChange={v => set("ews", v)} colors={{ Green: "#10b981", Yellow: "#f59e0b", Red: "#ef4444", Imminent: "#7c3aed" }} />
               </Field>
+              <Field label="⭐ Nominate as Top Agent?" hint="Recognize this specialist's outstanding performance this period">
+                <RadioGroup T={T} options={["Yes", "No"]} value={form.topAgent} onChange={v => set("topAgent", v)} colors={{ Yes: "#f59e0b", No: "#64748b" }} />
+              </Field>
               <Field label="Free text space for any other comment or summary.">
                 <textarea value={form.notes} onChange={e => set("notes", e.target.value)} placeholder="Any additional notes..." style={{ ...taT, minHeight: 100 }} />
               </Field>
@@ -875,6 +880,7 @@ function CoachingModal({ onClose, onSave, agentsForDropdown = [], clientProfiles
                   ["Warning Delivered", form.warningDelivered],
                   ["Warning Type", form.warningDelivered === "Yes" ? form.warningType : null],
                   ["EWS", form.ews],
+                  ["Top Agent", form.topAgent || null],
                 ].map(([k, v]) => v ? (
                   <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 5 }}>
                     <span style={{ color: T.muted }}>{k}</span>
@@ -1557,17 +1563,18 @@ function DashboardView({ coachings, warnings, role, T, onOpenCoaching, targets, 
   });
   const maxW = Math.max(...weeklyData.map(w=>w.val),1);
 
-  // Top 3
-  const agentRanking={};
+  // Top Agent nominations
+  const nominationMap={};
   coachings.forEach(c=>{
-    if(!agentRanking[c.agentName]) agentRanking[c.agentName]={pending:0,ack:0,rating:[]};
-    if(c.status==="Pending"||c.status==="Delivered") agentRanking[c.agentName].pending++;
-    if(c.status==="Acknowledged") agentRanking[c.agentName].ack++;
-    if(c.agentRating) agentRanking[c.agentName].rating.push(c.agentRating);
+    if(c.topAgent==="Yes") {
+      if(!nominationMap[c.agentName]) nominationMap[c.agentName]={nominations:0,rating:[]};
+      nominationMap[c.agentName].nominations++;
+      if(c.agentRating) nominationMap[c.agentName].rating.push(c.agentRating);
+    }
   });
-  const top3=Object.entries(agentRanking)
-    .map(([name,d])=>({name,pending:d.pending,ack:d.ack,avg:d.rating.length?(d.rating.reduce((a,b)=>a+b,0)/d.rating.length).toFixed(1):"—"}))
-    .sort((a,b)=>b.pending-a.pending).slice(0,3);
+  const top3=Object.entries(nominationMap)
+    .map(([name,d])=>({name,nominations:d.nominations,avg:d.rating.length?(d.rating.reduce((a,b)=>a+b,0)/d.rating.length).toFixed(1):"—"}))
+    .sort((a,b)=>b.nominations-a.nominations).slice(0,3);
 
   // Overdue — only agents with at least one non-acknowledged coaching
   const lastNonAckedByAgent={};
@@ -1857,17 +1864,17 @@ function DashboardView({ coachings, warnings, role, T, onOpenCoaching, targets, 
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
         {/* Top 3 */}
         <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:12, padding:18 }}>
-          <div style={{ fontSize:12, fontWeight:700, color:T.text, marginBottom:14 }}>🏆 Top Agents — Pending</div>
+          <div style={{ fontSize:12, fontWeight:700, color:T.text, marginBottom:14 }}>⭐ Top Agent Nominations</div>
           {top3.length===0
-            ? <div style={{ fontSize:12, color:T.muted, textAlign:"center", padding:"20px 0" }}>No data yet.</div>
+            ? <div style={{ fontSize:12, color:T.muted, textAlign:"center", padding:"20px 0" }}>No nominations yet. Mark agents as Top Agent when creating a coaching.</div>
             : top3.map((a,i)=>(
               <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 0", borderBottom:i<top3.length-1?`1px solid ${T.border}`:"none" }}>
                 <div style={{ fontSize:22, width:32 }}>{medals[i]}</div>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:13, fontWeight:600, color:T.text }}>{a.name}</div>
-                  <div style={{ fontSize:11, color:T.muted }}>{a.pending} pending · {a.ack} acknowledged · ⭐ {a.avg}</div>
+                  <div style={{ fontSize:11, color:T.muted }}>{a.nominations} nomination{a.nominations!==1?"s":""} · ⭐ {a.avg}</div>
                 </div>
-                <div style={{ fontSize:20, fontWeight:800, color:"#f59e0b" }}>{a.pending}</div>
+                <div style={{ fontSize:20, fontWeight:800, color:"#f59e0b" }}>{a.nominations}</div>
               </div>
             ))}
         </div>
@@ -2588,16 +2595,17 @@ export default function CoachingHub({ userProfile, onLogout, onOpenAdmin }) {
   const saveCoaching = async (form) => {
     try {
       const warningFields = { warningDelivered: form.warningDelivered, warningType: form.warningDelivered === "Yes" ? form.warningType : "" };
+      const topAgentField = { topAgent: form.topAgent };
       const buildExtraData = () => {
         switch (form.coachingReason) {
           case "General coaching":
-            return { kpiPerformance: form.kpiPerformance, kpisDiscussed: form.kpisDiscussed, kpiRiskFlag: form.kpiRiskFlag, kpiRiskDetail: form.kpiRiskDetail, prodQualityNotes: form.prodQualityNotes, prodRiskFlag: form.prodRiskFlag, prodRiskDetail: form.prodRiskDetail, genAttNotes: form.genAttNotes, genAttRiskFlag: form.genAttRiskFlag, genAttRiskDetail: form.genAttRiskDetail, ...warningFields };
+            return { kpiPerformance: form.kpiPerformance, kpisDiscussed: form.kpisDiscussed, kpiRiskFlag: form.kpiRiskFlag, kpiRiskDetail: form.kpiRiskDetail, prodQualityNotes: form.prodQualityNotes, prodRiskFlag: form.prodRiskFlag, prodRiskDetail: form.prodRiskDetail, genAttNotes: form.genAttNotes, genAttRiskFlag: form.genAttRiskFlag, genAttRiskDetail: form.genAttRiskDetail, ...warningFields, ...topAgentField };
           case "Productivity":
-            return { currentProductivity: form.currentProductivity, productivityQuality: form.productivityQuality, rootCause: form.rootCause, prodComment: form.prodComment, agentCommit: form.agentCommit, tlCommit: form.tlCommit, ...warningFields };
+            return { currentProductivity: form.currentProductivity, productivityQuality: form.productivityQuality, rootCause: form.rootCause, prodComment: form.prodComment, agentCommit: form.agentCommit, tlCommit: form.tlCommit, ...warningFields, ...topAgentField };
           case "Attendance":
-            return { attendanceProblem: form.attendanceProblem, attRootCause: form.attRootCause, agentCommit: form.agentCommit, tlCommit: form.tlCommit, ...warningFields };
+            return { attendanceProblem: form.attendanceProblem, attRootCause: form.attRootCause, agentCommit: form.agentCommit, tlCommit: form.tlCommit, ...warningFields, ...topAgentField };
           case "Attrition risk":
-            return { redFlag: form.redFlag, otherReason: form.otherReason, companyActions: form.companyActions, agentCommit: form.agentCommit, ...warningFields };
+            return { redFlag: form.redFlag, otherReason: form.otherReason, companyActions: form.companyActions, agentCommit: form.agentCommit, ...warningFields, ...topAgentField };
           default: return {};
         }
       };
